@@ -164,6 +164,50 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
       models: 'Models',
     },
   },
+  62: {
+    id: 62,
+    name: CHANNEL_TYPES[62],
+    icon: 'openai',
+    defaultBaseUrl: 'https://apihub.agnes-ai.com/v1',
+    hints: {
+      baseUrl: 'Default: https://apihub.agnes-ai.com/v1',
+      key: 'Agnes AI API key (site-bound)',
+      models: 'agnes-2.5-flash,agnes-2.5-pro,agnes-image-2.5-flash',
+    },
+  },
+  63: {
+    id: 63,
+    name: CHANNEL_TYPES[63],
+    icon: 'openai',
+    defaultBaseUrl: 'https://api.agnes-ai.cn/v1',
+    hints: {
+      baseUrl: 'Default: https://api.agnes-ai.cn/v1',
+      key: 'Agnes AI API key (site-bound)',
+      models: 'agnes-2.5-flash,agnes-2.5-pro,agnes-image-2.5-flash',
+    },
+  },
+  64: {
+    id: 64,
+    name: CHANNEL_TYPES[64],
+    icon: 'nvidia',
+    defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
+    hints: {
+      baseUrl: 'Default: https://integrate.api.nvidia.com/v1',
+      key: 'Format: nvapi-...',
+      models: 'meta/llama-3.3-70b-instruct,nvidia/llama-3.3-nemotron-super-49b-v1.5',
+    },
+  },
+  65: {
+    id: 65,
+    name: CHANNEL_TYPES[65],
+    icon: 'openai',
+    defaultBaseUrl: 'https://token.sensenova.cn/v1',
+    hints: {
+      baseUrl: 'Default: https://token.sensenova.cn/v1',
+      key: 'SenseNova Token Plan API key',
+      models: 'sensenova-6.8-flash-lite,deepseek-v4-flash',
+    },
+  },
 }
 
 /**

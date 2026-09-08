@@ -118,6 +118,12 @@ export function getChannelTypeIcon(type: number): string {
     12: 'OpenAI', // API2GPT
     13: 'OpenAI', // AIGC2D
     9: 'OpenAI', // AILS
+
+    // New providers
+    62: 'OpenAI', // Agnes AI (no LobeHub icon, fallback)
+    63: 'OpenAI', // Agnes AI CN (no LobeHub icon, fallback)
+    64: 'Nvidia', // NVIDIA NIM
+    65: 'OpenAI', // SenseNova (no LobeHub icon, fallback)
   }
 
   return TYPE_TO_ICON[type] || 'OpenAI'
