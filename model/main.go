@@ -374,6 +374,9 @@ func migrateDB() error {
 	if err != nil {
 		return err
 	}
+	if err := migratePerfMetricLegacyIndex(); err != nil {
+		common.SysError("failed to migrate perf_metrics channel index: " + err.Error())
+	}
 	if err := InitializeUserAuthVersions(); err != nil {
 		return err
 	}

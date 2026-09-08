@@ -10,6 +10,7 @@ type Store interface {
 type Sample struct {
 	Model        string
 	Group        string
+	ChannelId    int
 	LatencyMs    int64
 	TtftMs       int64
 	HasTtft      bool
@@ -19,9 +20,10 @@ type Sample struct {
 }
 
 type QueryParams struct {
-	Model string
-	Group string
-	Hours int
+	Model     string
+	Group     string
+	ChannelId int
+	Hours     int
 }
 
 type BucketPoint struct {
@@ -66,9 +68,10 @@ type SummaryAllResult struct {
 }
 
 type bucketKey struct {
-	model    string
-	group    string
-	bucketTs int64
+	model     string
+	group     string
+	channelId int
+	bucketTs  int64
 }
 
 type counters struct {

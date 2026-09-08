@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -10,9 +11,10 @@ import (
 // PerfMetric stores aggregated relay performance metrics for the model square.
 type PerfMetric struct {
 	Id             int    `json:"id" gorm:"primaryKey"`
-	ModelName      string `json:"model_name" gorm:"size:128;uniqueIndex:idx_perf_model_group_bucket,priority:1"`
-	Group          string `json:"group" gorm:"column:group;size:64;uniqueIndex:idx_perf_model_group_bucket,priority:2"`
-	BucketTs       int64  `json:"bucket_ts" gorm:"uniqueIndex:idx_perf_model_group_bucket,priority:3;index:idx_perf_bucket_ts"`
+	ModelName      string `json:"model_name" gorm:"size:128;uniqueIndex:idx_perf_model_group_channel_bucket,priority:1"`
+	Group          string `json:"group" gorm:"column:group;size:64;uniqueIndex:idx_perf_model_group_channel_bucket,priority:2"`
+	ChannelId      int    `json:"channel_id" gorm:"uniqueIndex:idx_perf_model_group_channel_bucket,priority:3"`
+	BucketTs       int64  `json:"bucket_ts" gorm:"uniqueIndex:idx_perf_model_group_channel_bucket,priority:4;index:idx_perf_bucket_ts"`
 	RequestCount   int64  `json:"-" gorm:"default:0"`
 	SuccessCount   int64  `json:"-" gorm:"default:0"`
 	TotalLatencyMs int64  `json:"-" gorm:"default:0"`
@@ -26,6 +28,22 @@ func (PerfMetric) TableName() string {
 	return "perf_metrics"
 }
 
+// migratePerfMetricLegacyIndex drops the pre-channel_id unique index. AutoMigrate
+// creates the widened unique index but never removes the old one, and the legacy
+// (model_name, group, bucket_ts) constraint would reject rows that only differ
+// by channel_id.
+func migratePerfMetricLegacyIndex() error {
+	const legacyIndex = "idx_perf_model_group_bucket"
+	if !DB.Migrator().HasIndex(&PerfMetric{}, legacyIndex) {
+		return nil
+	}
+	if err := DB.Migrator().DropIndex(&PerfMetric{}, legacyIndex); err != nil {
+		return err
+	}
+	common.SysLog("dropped legacy perf_metrics unique index " + legacyIndex)
+	return nil
+}
+
 func UpsertPerfMetric(metric *PerfMetric) error {
 	if metric == nil || metric.RequestCount == 0 {
 		return nil
@@ -34,6 +52,7 @@ func UpsertPerfMetric(metric *PerfMetric) error {
 		Columns: []clause.Column{
 			{Name: "model_name"},
 			{Name: "group"},
+			{Name: "channel_id"},
 			{Name: "bucket_ts"},
 		},
 		DoUpdates: clause.Assignments(map[string]any{
@@ -48,12 +67,15 @@ func UpsertPerfMetric(metric *PerfMetric) error {
 	}).Create(metric).Error
 }
 
-func GetPerfMetrics(modelName string, group string, startTs int64, endTs int64) ([]PerfMetric, error) {
+func GetPerfMetrics(modelName string, group string, channelId int, startTs int64, endTs int64) ([]PerfMetric, error) {
 	var metrics []PerfMetric
 	query := DB.Model(&PerfMetric{}).
 		Where("model_name = ? AND bucket_ts >= ? AND bucket_ts <= ?", modelName, startTs, endTs)
 	if group != "" {
 		query = query.Where(commonGroupCol+" = ?", group)
+	}
+	if channelId != 0 {
+		query = query.Where("channel_id = ?", channelId)
 	}
 	err := query.Order("bucket_ts ASC").Find(&metrics).Error
 	return metrics, err
