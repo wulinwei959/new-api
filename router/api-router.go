@@ -245,6 +245,14 @@ func SetApiRouter(router *gin.Engine) {
 			ratioSyncRoute.GET("/channels", controller.GetSyncableChannels)
 			ratioSyncRoute.POST("/fetch", controller.FetchUpstreamRatios)
 		}
+		unifiedModelRoute := apiRouter.Group("/unified_model")
+		unifiedModelRoute.Use(middleware.RootAuth())
+		{
+			unifiedModelRoute.GET("/", controller.GetUnifiedModels)
+			unifiedModelRoute.PUT("/", controller.UpdateUnifiedModels)
+			unifiedModelRoute.GET("/health", controller.GetUnifiedModelHealth)
+			unifiedModelRoute.GET("/channels", controller.GetUnifiedModelChannels)
+		}
 		taskPluginRoute := apiRouter.Group("/plugin/task")
 		taskPluginRoute.Use(middleware.RootAuth())
 		{
