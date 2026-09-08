@@ -208,6 +208,7 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/model_pricing", controller.GetModelPricingConfig)
 			optionRoute.PATCH("/model_pricing", controller.UpdateModelPricingConfig)
 			optionRoute.POST("/payment_compliance", controller.ConfirmPaymentCompliance)
+		optionRoute.POST("/usd_exchange_rate/refresh", controller.RefreshExchangeRate)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/rest_model_ratio", controller.ResetModelRatio)
