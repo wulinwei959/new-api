@@ -22,8 +22,6 @@ import (
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -271,8 +269,20 @@ func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	channel.UpdateBalance(balance)
-	return balance, nil
+	balanceUsd := convertCnyBalanceToUsd(balance)
+	channel.UpdateBalance(balanceUsd)
+	return balanceUsd, nil
+}
+
+// convertCnyBalanceToUsd 把人民币计价的渠道余额统一换算成 USD 再入库。
+// channel.Balance 声明为美元,前端一律按 USD 渲染;人民币上游(DeepSeek、
+// 硅基流动、月之暗面)采集后若不换算,CNY 展示模式下会被二次放大。
+func convertCnyBalanceToUsd(cny float64) float64 {
+	rate := operation_setting.USDExchangeRate
+	if rate <= 0 {
+		return cny
+	}
+	return cny / rate
 }
 
 func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
@@ -300,8 +310,9 @@ func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	channel.UpdateBalance(balance)
-	return balance, nil
+	balanceUsd := convertCnyBalanceToUsd(balance)
+	channel.UpdateBalance(balanceUsd)
+	return balanceUsd, nil
 }
 
 func updateChannelAIGC2DBalance(channel *model.Channel) (float64, error) {
@@ -364,7 +375,9 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 		return 0, fmt.Errorf("failed to update moonshot balance, status: %v, code: %d, scode: %s", response.Status, response.Code, response.Scode)
 	}
 	availableBalanceCny := response.Data.AvailableBalance
-	availableBalanceUsd := decimal.NewFromFloat(availableBalanceCny).Div(decimal.NewFromFloat(operation_setting.Price)).InexactFloat64()
+	// 月之暗面余额为人民币,统一经站点汇率换算为 USD 入库
+	// (此前除以充值售价 Price,口径与展示汇率 USDExchangeRate 不一致)。
+	availableBalanceUsd := convertCnyBalanceToUsd(availableBalanceCny)
 	channel.UpdateBalance(availableBalanceUsd)
 	return availableBalanceUsd, nil
 }

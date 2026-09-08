@@ -4,9 +4,25 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/relaykit/types"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
+
 	"github.com/gin-gonic/gin"
 )
+
+// openAISubscriptionAmount 按 OpenAI 兼容契约返回 hard_limit_usd 等字段的值:
+// 恒定为美元(额度 ÷ QuotaPerUnit),不随站点展示类型(USD/CNY/TOKENS)漂移。
+// 展示层的币种换算由各客户端基于自身汇率配置完成;若在此处按展示类型换算,
+// 下游 new-api/one-api 渠道余额查询会把人民币数值当作美元存储,导致层级放大。
+func openAISubscriptionAmount(totalQuota int64, unlimited bool) float64 {
+	if unlimited {
+		return 100000000
+	}
+	return float64(totalQuota) / common.QuotaPerUnit
+}
+
+// openAIUsageAmount 返回 total_usage 的值,单位恒为 0.01 美元(OpenAI 契约)。
+func openAIUsageAmount(usedQuota int) float64 {
+	return float64(usedQuota) / common.QuotaPerUnit * 100
+}
 
 func GetSubscription(c *gin.Context) {
 	var remainQuota int
@@ -39,23 +55,8 @@ func GetSubscription(c *gin.Context) {
 		return
 	}
 	quota := remainQuota + usedQuota
-	amount := float64(quota)
-	// OpenAI 兼容接口中的 *_USD 字段含义保持“额度单位”对应值：
-	// 我们将其解释为以“站点展示类型”为准：
-	// - USD: 直接除以 QuotaPerUnit
-	// - CNY: 先转 USD 再乘汇率
-	// - TOKENS: 直接使用 tokens 数量
-	switch operation_setting.GetQuotaDisplayType() {
-	case operation_setting.QuotaDisplayTypeCNY:
-		amount = amount / common.QuotaPerUnit * operation_setting.USDExchangeRate
-	case operation_setting.QuotaDisplayTypeTokens:
-		// amount 保持 tokens 数值
-	default:
-		amount = amount / common.QuotaPerUnit
-	}
-	if token != nil && token.UnlimitedQuota {
-		amount = 100000000
-	}
+	unlimited := token != nil && token.UnlimitedQuota
+	amount := openAISubscriptionAmount(int64(quota), unlimited)
 	subscription := OpenAISubscriptionResponse{
 		Object:             "billing_subscription",
 		HasPaymentMethod:   true,
@@ -90,18 +91,9 @@ func GetUsage(c *gin.Context) {
 		})
 		return
 	}
-	amount := float64(quota)
-	switch operation_setting.GetQuotaDisplayType() {
-	case operation_setting.QuotaDisplayTypeCNY:
-		amount = amount / common.QuotaPerUnit * operation_setting.USDExchangeRate
-	case operation_setting.QuotaDisplayTypeTokens:
-		// tokens 保持原值
-	default:
-		amount = amount / common.QuotaPerUnit
-	}
 	usage := OpenAIUsageResponse{
 		Object:     "list",
-		TotalUsage: amount * 100,
+		TotalUsage: openAIUsageAmount(quota),
 	}
 	c.JSON(200, usage)
 	return
