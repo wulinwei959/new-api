@@ -105,28 +105,13 @@ function hasRatio(value: number | null | undefined): boolean {
 /**
  * Apply recharge rate to price
  *
- * priceRate represents how much users need to recharge (in the display currency)
- * to get 1 USD credit. usdExchangeRate is the real exchange rate.
+ * 两个参数语义独立,解耦说明(历史 CNY 单价混乱问题的修复):
+ * - priceRate:充值口径,"购买 1 美元额度需支付多少本币"(管理员可设优惠价)
+ * - usdExchangeRate:展示口径,"1 USD = 多少本币"的真实汇率
  *
- * The returned value will be formatted by formatBillingCurrencyFromUSD, which will
- * multiply by the display currency's exchange rate.
- *
- * Examples:
- *
- * 1. Display currency = USD:
- *    - Model: 1 USD
- *    - priceRate = 0.5 (recharge $0.5 to get $1 credit)
- *    - usdExchangeRate = 1
- *    - Return: 1 × 0.5 / 1 = 0.5
- *    - formatBillingCurrencyFromUSD(0.5) → $0.5 ✓
- *
- * 2. Display currency = CNY:
- *    - Model: 1 USD
- *    - priceRate = 4 (recharge ¥4 to get $1 credit)
- *    - usdExchangeRate = 7 (real rate: 1 USD = ¥7)
- *    - Return: 1 × 4 / 7 = 0.571
- *    - formatBillingCurrencyFromUSD(0.571) → 0.571 × 7 = ¥4 ✓
- *    - Normal price: ¥7, Recharge price: ¥4 (cheaper!)
+ * 返回值是"等效美元价":formatBillingCurrencyFromUSD 展示时会乘展示汇率,
+ * 数学上最终渲染为 本币单价 = 美元单价 × priceRate,与展示汇率无关——
+ * 管理员单独调整汇率不再影响充值价,单独调整充值价不再影响普通价。
  */
 function applyRechargeRate(
   price: number,
