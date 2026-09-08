@@ -111,7 +111,8 @@ type unifiedModelChannelOption struct {
 
 // GetUnifiedModelChannels 返回成员编辑器的渠道下拉数据。
 func GetUnifiedModelChannels(c *gin.Context) {
-	channels, err := model.GetAllChannels(0, 0, false, true)
+	// selectAll=true 返回全部渠道；否则 Limit(0) 查不到任何数据。
+	channels, err := model.GetAllChannels(0, 0, true, false)
 	if err != nil {
 		common.ApiError(c, err)
 		return

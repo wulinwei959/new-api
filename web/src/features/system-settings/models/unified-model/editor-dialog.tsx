@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
@@ -73,6 +73,20 @@ export function UnifiedModelEditorDialog(props: Props) {
     })) ?? []
   )
   const [error, setError] = useState('')
+
+  // 对话框常驻挂载,每次打开时从 initial 重建内部状态,否则编辑已有模型不会回填。
+  useEffect(() => {
+    if (!props.open) return
+    setId(props.initial?.id ?? '')
+    setEnabled(props.initial?.enabled ?? true)
+    setMembers(
+      props.initial?.channels.map((member) => ({
+        ...member,
+        _key: nextMemberKey(),
+      })) ?? []
+    )
+    setError('')
+  }, [props.open, props.initial])
 
   const updateMember = (key: string, patch: Partial<UnifiedModelChannelMember>) => {
     setMembers((prev) =>
