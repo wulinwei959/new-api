@@ -272,7 +272,9 @@ func GetUnifiedModelHealth(c *gin.Context, unifiedId string) ([]UnifiedModelHeal
 		return nil, false
 	}
 	userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
-	memberStats := collectMemberStatsUncached(c, unified, "", userGroup)
+	// 管理端健康视图按 auto 分组解析成员：空 tokenGroup 无法命中任何渠道分组，
+	// 会导致所有成员统计恒为 0。
+	memberStats := collectMemberStatsUncached(c, unified, "auto", userGroup)
 	healths := make([]UnifiedModelHealth, 0, len(unified.Channels))
 	for _, member := range unified.Channels {
 		entry, found := memberStats[member.ChannelId]
