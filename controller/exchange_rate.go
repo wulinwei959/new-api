@@ -17,10 +17,11 @@ import (
 )
 
 // 公开汇率源,依次回退。两者都返回 {"rates": {"CNY": ...}} 结构,
-// 且无需 API Key。源 URL 为硬编码常量,不接收用户输入,无 SSRF 面。
+// 且无需 API Key(已实测确认响应格式)。源 URL 为硬编码常量,
+// 不接收用户输入,无 SSRF 面。
 var exchangeRateSourceURLs = []string{
 	"https://open.er-api.com/v6/latest/USD",
-	"https://api.frankfurter.app/latest?from=USD&to=CNY",
+	"https://api.frankfurter.dev/v1/latest?base=USD&symbols=CNY",
 }
 
 const exchangeRateFetchTimeout = 10 * time.Second
