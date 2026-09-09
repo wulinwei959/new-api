@@ -167,7 +167,7 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
   62: {
     id: 62,
     name: CHANNEL_TYPES[62],
-    icon: 'openai',
+    icon: 'agnes',
     defaultBaseUrl: 'https://apihub.agnes-ai.com/v1',
     hints: {
       baseUrl: 'Default: https://apihub.agnes-ai.com/v1',
@@ -178,7 +178,7 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
   63: {
     id: 63,
     name: CHANNEL_TYPES[63],
-    icon: 'openai',
+    icon: 'agnes',
     defaultBaseUrl: 'https://api.agnes-ai.cn/v1',
     hints: {
       baseUrl: 'Default: https://api.agnes-ai.cn/v1',
@@ -200,7 +200,7 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
   65: {
     id: 65,
     name: CHANNEL_TYPES[65],
-    icon: 'openai',
+    icon: 'sensenova',
     defaultBaseUrl: 'https://token.sensenova.cn/v1',
     hints: {
       baseUrl: 'Default: https://token.sensenova.cn/v1',
