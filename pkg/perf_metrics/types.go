@@ -53,17 +53,18 @@ type SuccessRatePoint struct {
 }
 
 type ChannelStats struct {
-	Model       string
-	Group       string
-	AvgLatencyMs int64
-	MaxLatencyMs int64
-	SuccessRate float64
-	RequestCount int64
+	Model          string
+	Group          string
+	AvgLatencyMs   int64
+	MaxLatencyMs   int64
+	SuccessRate    float64
+	AvgTps         float64
+	RequestCount   int64
 }
 
-func QueryChannelStats(store Store, model, group string, hours int) ([]ChannelStats, error) {
-	// Simplified implementation
-	return nil, nil
+func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
+	// Simplified implementation - returns empty map
+	return make(map[int]ChannelStats), nil
 }
 
 type ModelSummary struct {
