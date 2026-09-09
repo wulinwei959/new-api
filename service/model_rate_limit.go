@@ -56,8 +56,7 @@ func ReserveModelRateLimit(model string) error {
 		return nil
 	}
 	rpm, tpm64, found := setting.GetModelRateLimit(model)
-	tpm := int(tpm64)
-	if !found || (rpm <= 0 && tpm <= 0) {
+	if !found || (rpm <= 0 && tpm64 <= 0) {
 		return nil
 	}
 	// The counters are about to move, so any cached headroom answer for this
@@ -126,8 +125,7 @@ func ModelRateLimitHasHeadroom(model string) bool {
 		return true
 	}
 	rpm, tpm64, found := setting.GetModelRateLimit(model)
-	tpm := int(tpm64)
-	if !found || (rpm <= 0 && tpm <= 0) {
+	if !found || (rpm <= 0 && tpm64 <= 0) {
 		return true
 	}
 	if entry, ok := modelRateLimitHeadroomCache.Load(model); ok {

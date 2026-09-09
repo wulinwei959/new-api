@@ -20,22 +20,22 @@ func init() {
 }
 
 // GetModelRateLimit returns the rate limit config for a model.
-func GetModelRateLimit(model string) (rpm, tpm int, found bool) {
+func GetModelRateLimit(model string) (rpm int, tpm int64, found bool) {
 	modelRateLimitMu.RLock()
 	defer modelRateLimitMu.RUnlock()
 	cfg, ok := modelRateLimitConfig[model]
 	if !ok {
 		return 0, 0, false
 	}
-	return cfg.RPM, cfg.TPM, true
+	return cfg.RPM, int64(cfg.TPM), true
 }
 
 // SetModelRateLimit updates the rate limit config for a model.
-func SetModelRateLimit(model string, rpm, tpm int) {
+func SetModelRateLimit(model string, rpm int, tpm int64) {
 	modelRateLimitMu.Lock()
 	defer modelRateLimitMu.Unlock()
 	if modelRateLimitConfig == nil {
 		modelRateLimitConfig = make(map[string]ModelRateLimitConfig)
 	}
-	modelRateLimitConfig[model] = ModelRateLimitConfig{RPM: rpm, TPM: tpm}
+	modelRateLimitConfig[model] = ModelRateLimitConfig{RPM: rpm, TPM: int(tpm)}
 }
