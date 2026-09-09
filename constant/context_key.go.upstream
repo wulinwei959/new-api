@@ -80,9 +80,3 @@ const (
 	// ContextKeyTokenAuditSucceeded disambiguates token responses that exceed the audit buffer.
 	ContextKeyTokenAuditSucceeded ContextKey = "token_audit_succeeded"
 )
-
-// 统一模型相关上下文键
-const (
-	ContextKeyUnifiedModelId = "unified_model_id"
-	ContextKeyUnifiedModelTarget = "unified_model_target"
-)
