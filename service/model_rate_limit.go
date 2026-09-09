@@ -64,9 +64,9 @@ func ReserveModelRateLimit(model string) error {
 	// model is stale.
 	modelRateLimitHeadroomCache.Delete(model)
 	if common.RedisEnabled {
-		return reserveRedisModelRateLimit(model, rpm, tpm)
+		return reserveRedisModelRateLimit(model, rpm, tpm64)
 	}
-	return reserveMemoryModelRateLimit(model, rpm, tpm)
+	return reserveMemoryModelRateLimit(model, rpm, tpm64)
 }
 
 // RecordModelTokens adds the actual response token count of a request to
@@ -139,9 +139,9 @@ func ModelRateLimitHasHeadroom(model string) bool {
 
 	var hasHeadroom bool
 	if common.RedisEnabled {
-		hasHeadroom = redisModelRateLimitHasHeadroom(model, rpm, tpm)
+		hasHeadroom = redisModelRateLimitHasHeadroom(model, rpm, tpm64)
 	} else {
-		hasHeadroom = memoryModelRateLimitHasHeadroom(model, rpm, tpm)
+		hasHeadroom = memoryModelRateLimitHasHeadroom(model, rpm, tpm64)
 	}
 	modelRateLimitHeadroomCache.Store(model, modelRateLimitHeadroomCacheEntry{
 		expiresAt: time.Now().Add(modelRateLimitHeadroomCacheTTL),
