@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { useStatus } from '@/hooks/use-status'
+import { requireServerSuccess } from '@/lib/server-error-message'
 
 import { getPricing } from '../api'
 
@@ -28,7 +29,7 @@ export function usePricingData(enabled = true) {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['pricing'],
-    queryFn: getPricing,
+    queryFn: async () => requireServerSuccess(await getPricing()),
     staleTime: 5 * 60 * 1000,
     enabled,
   })
@@ -38,11 +39,9 @@ export function usePricingData(enabled = true) {
     () => Math.max((status?.price as number) ?? 1, 0.001),
     [status?.price]
   )
-  // 展示汇率与充值售价是两个独立配置,汇率缺失时不得回退到充值售价,
-  // 否则普通单价会被充值口径污染(历史 CNY 混乱问题的来源之一)。
   const usdExchangeRate = useMemo(
-    () => Math.max((status?.usd_exchange_rate as number) ?? 1, 0.001),
-    [status?.usd_exchange_rate]
+    () => Math.max((status?.usd_exchange_rate as number) ?? priceRate, 0.001),
+    [status?.usd_exchange_rate, priceRate]
   )
 
   const models = useMemo(() => {
