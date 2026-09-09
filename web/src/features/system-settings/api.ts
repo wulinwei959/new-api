@@ -41,22 +41,6 @@ export async function updateSystemOption(request: UpdateOptionRequest) {
   return res.data
 }
 
-export interface RefreshExchangeRateResponse {
-  success: boolean
-  message: string
-  data: {
-    rate: number
-    source: string
-  }
-}
-
-export async function refreshExchangeRate() {
-  const res = await api.post<RefreshExchangeRateResponse>(
-    '/api/option/usd_exchange_rate/refresh'
-  )
-  return res.data
-}
-
 export async function confirmPaymentCompliance() {
   const res = await api.post<ConfirmPaymentComplianceResponse>(
     '/api/option/payment_compliance',

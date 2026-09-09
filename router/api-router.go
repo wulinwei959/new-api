@@ -208,7 +208,6 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/model_pricing", controller.GetModelPricingConfig)
 			optionRoute.PATCH("/model_pricing", controller.UpdateModelPricingConfig)
 			optionRoute.POST("/payment_compliance", controller.ConfirmPaymentCompliance)
-			optionRoute.POST("/usd_exchange_rate/refresh", controller.RefreshExchangeRate)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/rest_model_ratio", controller.ResetModelRatio)
@@ -245,14 +244,6 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			ratioSyncRoute.GET("/channels", controller.GetSyncableChannels)
 			ratioSyncRoute.POST("/fetch", controller.FetchUpstreamRatios)
-		}
-		unifiedModelRoute := apiRouter.Group("/unified_model")
-		unifiedModelRoute.Use(middleware.RootAuth())
-		{
-			unifiedModelRoute.GET("/", controller.GetUnifiedModels)
-			unifiedModelRoute.PUT("/", controller.UpdateUnifiedModels)
-			unifiedModelRoute.GET("/health", controller.GetUnifiedModelHealth)
-			unifiedModelRoute.GET("/channels", controller.GetUnifiedModelChannels)
 		}
 		taskPluginRoute := apiRouter.Group("/plugin/task")
 		taskPluginRoute.Use(middleware.RootAuth())

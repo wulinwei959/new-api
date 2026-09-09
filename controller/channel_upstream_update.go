@@ -431,11 +431,6 @@ func fetchChannelUpstreamModelIDs(channel *model.Channel) ([]string, error) {
 		} else {
 			url = fmt.Sprintf("%s/v1/models", baseURL)
 		}
-	case constant.ChannelTypeAgnes, constant.ChannelTypeAgnesChina,
-		constant.ChannelTypeNVIDIA, constant.ChannelTypeSenseNova:
-		// OpenAI-compatible; a stored base may still carry a trailing /v1
-		// from the old defaults, so normalize before appending /v1/models.
-		url = fmt.Sprintf("%s/v1/models", relaycommon.NormalizeOpenAIBaseURL(baseURL))
 	default:
 		url = fmt.Sprintf("%s/v1/models", baseURL)
 	}

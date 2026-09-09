@@ -17,11 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { RefreshCw } from 'lucide-react'
 import type { Resolver } from 'react-hook-form'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import * as z from 'zod'
 
 import {
@@ -33,7 +30,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -46,7 +42,6 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { DEFAULT_CURRENCY_CONFIG } from '@/stores/system-config-store'
 
-import { refreshExchangeRate } from '../api'
 import { FormDirtyIndicator } from '../components/form-dirty-indicator'
 import { FormNavigationGuard } from '../components/form-navigation-guard'
 import {
@@ -109,7 +104,6 @@ type PricingSectionProps = {
 export function PricingSection({ defaultValues }: PricingSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
-  const [refreshingRate, setRefreshingRate] = useState(false)
 
   const pricingSchema = createPricingSchema(t)
 
@@ -149,30 +143,6 @@ export function PricingSection({ defaultValues }: PricingSectionProps) {
     displayType === 'TOKENS' ||
     defaultValues.QuotaPerUnit !== DEFAULT_CURRENCY_CONFIG.quotaPerUnit
   const showDisplayInCurrencyOption = displayInCurrencyEnabled === false
-
-  // 一键刷新:后端拉取实时 USD→CNY 汇率并直接落库;表单同步显示新值但
-  // 不标记 dirty(选项已生效),手动输入入口保持不变。
-  const handleRefreshRate = async () => {
-    setRefreshingRate(true)
-    try {
-      const res = await refreshExchangeRate()
-      if (res.success && res.data?.rate > 0) {
-        form.setValue('USDExchangeRate', res.data.rate, { shouldDirty: false })
-        toast.success(
-          t('Exchange rate updated to {{rate}} (source: {{source}})', {
-            rate: res.data.rate,
-            source: res.data.source,
-          })
-        )
-      } else {
-        toast.error(res.message || t('Failed to refresh exchange rate'))
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err))
-    } finally {
-      setRefreshingRate(false)
-    }
-  }
 
   return (
     <>
@@ -265,25 +235,13 @@ export function PricingSection({ defaultValues }: PricingSectionProps) {
                 name='USDExchangeRate'
                 render={({ field }) => (
                   <FormItem>
-                    <div className='flex items-center justify-between gap-2'>
-                      <FormLabel>
-                        {displayType === 'CNY'
-                          ? t('CNY per USD')
+                    <FormLabel>
+                      {displayType === 'CNY'
+                        ? t('CNY per USD')
+                        : displayType === 'USD'
+                          ? t('USD Exchange Rate')
                           : t('USD Exchange Rate')}
-                      </FormLabel>
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
-                        onClick={handleRefreshRate}
-                        disabled={refreshingRate}
-                      >
-                        <RefreshCw
-                          className={`size-4 ${refreshingRate ? 'animate-spin' : ''}`}
-                        />
-                        {t('Fetch Live Rate')}
-                      </Button>
-                    </div>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type='number'

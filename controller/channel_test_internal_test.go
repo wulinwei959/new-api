@@ -97,31 +97,6 @@ func TestNewAPIChannelRegistration(t *testing.T) {
 	assert.Empty(t, constant.ChannelBaseURLs[constant.ChannelTypeNewAPI])
 }
 
-func TestOpenAICompatibleChannelRegistration(t *testing.T) {
-	tests := []struct {
-		name        string
-		channelType int
-		apiType     int
-		typeName    string
-		wantBaseURL string
-	}{
-		{name: "Agnes", channelType: constant.ChannelTypeAgnes, apiType: constant.APITypeAgnes, typeName: "AgnesAI", wantBaseURL: "https://apihub.agnes-ai.com/v1"},
-		{name: "Agnes China", channelType: constant.ChannelTypeAgnesChina, apiType: constant.APITypeAgnes, typeName: "AgnesAI CN", wantBaseURL: "https://api.agnes-ai.cn/v1"},
-		{name: "NVIDIA NIM", channelType: constant.ChannelTypeNVIDIA, apiType: constant.APITypeNVIDIA, typeName: "NVIDIA NIM", wantBaseURL: "https://integrate.api.nvidia.com/v1"},
-		{name: "SenseNova", channelType: constant.ChannelTypeSenseNova, apiType: constant.APITypeSenseNova, typeName: "SenseNova", wantBaseURL: "https://token.sensenova.cn/v1"},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			apiType, ok := common.ChannelType2APIType(test.channelType)
-			require.True(t, ok)
-			assert.Equal(t, test.apiType, apiType)
-			assert.Equal(t, test.typeName, constant.GetChannelTypeName(test.channelType))
-			require.Greater(t, len(constant.ChannelBaseURLs), test.channelType)
-			assert.Equal(t, test.wantBaseURL, constant.GetChannelBaseURL(test.channelType))
-		})
-	}
-}
-
 func TestResponsesCompactChannelSupport(t *testing.T) {
 	tests := []struct {
 		name        string

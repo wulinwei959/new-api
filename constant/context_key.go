@@ -44,11 +44,6 @@ const (
 	ContextKeyAutoGroupIndex      ContextKey = "auto_group_index"
 	ContextKeyAutoGroupRetryIndex ContextKey = "auto_group_retry_index"
 
-	// Unified model routing: the client-facing pool id ("auto") and the
-	// concrete upstream model name the selector picked for this attempt.
-	ContextKeyUnifiedModelId     ContextKey = "unified_model_id"
-	ContextKeyUnifiedModelTarget ContextKey = "unified_model_target_model"
-
 	/* user related keys */
 	ContextKeyUserId      ContextKey = "id"
 	ContextKeyUserSetting ContextKey = "user_setting"

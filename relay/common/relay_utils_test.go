@@ -140,11 +140,3 @@ func TestTaskDurationBounds(t *testing.T) {
 		})
 	}
 }
-
-func TestNormalizeOpenAIBaseURL(t *testing.T) {
-	assert.Equal(t, "https://apihub.agnes-ai.com", NormalizeOpenAIBaseURL("https://apihub.agnes-ai.com/v1"))
-	assert.Equal(t, "https://apihub.agnes-ai.com", NormalizeOpenAIBaseURL("https://apihub.agnes-ai.com"))
-	assert.Equal(t, "https://api.agnes-ai.cn", NormalizeOpenAIBaseURL("https://api.agnes-ai.cn/v1/"))
-	assert.Equal(t, "https://host.example/v1beta", NormalizeOpenAIBaseURL("https://host.example/v1beta"))
-	assert.Equal(t, "https://host.example", NormalizeOpenAIBaseURL("https://host.example/"))
-}

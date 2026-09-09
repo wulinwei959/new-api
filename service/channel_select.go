@@ -9,7 +9,6 @@ import (
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/jsplugin"
-	"github.com/QuantumNous/new-api/setting/unified_model_setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -112,17 +111,6 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 	selectGroup := param.TokenGroup
 	userGroup := common.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
 	filters := GetChannelConstraints(param.Ctx).Filters
-
-	// 统一模型池绕过 ability 表:选择器对配置的成员打分,并排除
-	// 重试过程中已尝试过的渠道(记录在 use_channel 上下文中)。
-	if unified_model_setting.IsUnifiedModel(param.ModelName) {
-		exclude := ParseExcludeChannelIds(param.Ctx.GetStringSlice("use_channel"))
-		channel, selectGroup, err = SelectUnifiedModelChannel(param.Ctx, param.ModelName, param.TokenGroup, exclude)
-		if err == nil && selectGroup != "" && param.TokenGroup == "auto" {
-			common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroup, selectGroup)
-		}
-		return channel, selectGroup, err
-	}
 
 	if param.TokenGroup == "auto" {
 		autoGroups := GetRequestAutoGroups(param.Ctx, userGroup)

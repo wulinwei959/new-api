@@ -10,7 +10,6 @@ type Store interface {
 type Sample struct {
 	Model        string
 	Group        string
-	ChannelId    int
 	LatencyMs    int64
 	TtftMs       int64
 	HasTtft      bool
@@ -20,10 +19,9 @@ type Sample struct {
 }
 
 type QueryParams struct {
-	Model     string
-	Group     string
-	ChannelId int
-	Hours     int
+	Model string
+	Group string
+	Hours int
 }
 
 type BucketPoint struct {
@@ -68,17 +66,15 @@ type SummaryAllResult struct {
 }
 
 type bucketKey struct {
-	model     string
-	group     string
-	channelId int
-	bucketTs  int64
+	model    string
+	group    string
+	bucketTs int64
 }
 
 type counters struct {
 	requestCount   int64
 	successCount   int64
 	totalLatencyMs int64
-	maxLatencyMs   int64
 	ttftSumMs      int64
 	ttftCount      int64
 	outputTokens   int64
@@ -89,7 +85,6 @@ type atomicBucket struct {
 	requestCount   atomic.Int64
 	successCount   atomic.Int64
 	totalLatencyMs atomic.Int64
-	maxLatencyMs   atomic.Int64
 	ttftSumMs      atomic.Int64
 	ttftCount      atomic.Int64
 	outputTokens   atomic.Int64
@@ -103,15 +98,6 @@ func (b *atomicBucket) add(sample Sample) {
 	}
 	if sample.LatencyMs > 0 {
 		b.totalLatencyMs.Add(sample.LatencyMs)
-		for {
-			current := b.maxLatencyMs.Load()
-			if sample.LatencyMs <= current {
-				break
-			}
-			if b.maxLatencyMs.CompareAndSwap(current, sample.LatencyMs) {
-				break
-			}
-		}
 	}
 	if sample.HasTtft && sample.TtftMs >= 0 {
 		b.ttftSumMs.Add(sample.TtftMs)
@@ -128,7 +114,6 @@ func (b *atomicBucket) snapshot() counters {
 		requestCount:   b.requestCount.Load(),
 		successCount:   b.successCount.Load(),
 		totalLatencyMs: b.totalLatencyMs.Load(),
-		maxLatencyMs:   b.maxLatencyMs.Load(),
 		ttftSumMs:      b.ttftSumMs.Load(),
 		ttftCount:      b.ttftCount.Load(),
 		outputTokens:   b.outputTokens.Load(),
@@ -141,7 +126,6 @@ func (b *atomicBucket) drain() counters {
 		requestCount:   b.requestCount.Swap(0),
 		successCount:   b.successCount.Swap(0),
 		totalLatencyMs: b.totalLatencyMs.Swap(0),
-		maxLatencyMs:   b.maxLatencyMs.Swap(0),
 		ttftSumMs:      b.ttftSumMs.Swap(0),
 		ttftCount:      b.ttftCount.Swap(0),
 		outputTokens:   b.outputTokens.Swap(0),
@@ -158,17 +142,6 @@ func (b *atomicBucket) addCounters(c counters) {
 	}
 	if c.totalLatencyMs != 0 {
 		b.totalLatencyMs.Add(c.totalLatencyMs)
-	}
-	if c.maxLatencyMs != 0 {
-		for {
-			current := b.maxLatencyMs.Load()
-			if c.maxLatencyMs <= current {
-				break
-			}
-			if b.maxLatencyMs.CompareAndSwap(current, c.maxLatencyMs) {
-				break
-			}
-		}
 	}
 	if c.ttftSumMs != 0 {
 		b.ttftSumMs.Add(c.ttftSumMs)
