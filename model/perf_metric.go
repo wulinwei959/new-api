@@ -64,10 +64,10 @@ func UpsertPerfMetric(metric *PerfMetric) error {
 				"CASE WHEN perf_metrics.max_latency_ms < ? THEN ? ELSE perf_metrics.max_latency_ms END",
 				metric.MaxLatencyMs, metric.MaxLatencyMs,
 			),
-			"ttft_sum_ms":      gorm.Expr("perf_metrics.ttft_sum_ms + ?", metric.TtftSumMs),
-			"ttft_count":       gorm.Expr("perf_metrics.ttft_count + ?", metric.TtftCount),
-			"output_tokens":    gorm.Expr("perf_metrics.output_tokens + ?", metric.OutputTokens),
-			"generation_ms":    gorm.Expr("perf_metrics.generation_ms + ?", metric.GenerationMs),
+			"ttft_sum_ms":   gorm.Expr("perf_metrics.ttft_sum_ms + ?", metric.TtftSumMs),
+			"ttft_count":    gorm.Expr("perf_metrics.ttft_count + ?", metric.TtftCount),
+			"output_tokens": gorm.Expr("perf_metrics.output_tokens + ?", metric.OutputTokens),
+			"generation_ms": gorm.Expr("perf_metrics.generation_ms + ?", metric.GenerationMs),
 		}),
 	}).Create(metric).Error
 }
