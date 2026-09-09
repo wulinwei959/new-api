@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -260,6 +261,22 @@ func ListModels(c *gin.Context, modelType int) {
 			continue
 		}
 		userModelNames = append(userModelNames, modelName)
+	}
+
+	// Unified pools never enter the ability table (billing resolves per
+	// member), so append the pools that can serve this request directly.
+	// The billing-config filter does not apply to them.
+	for _, poolId := range service.GetAvailableUnifiedModelIds(c, groups.ownerGroups, groups.userGroup) {
+		if slices.Contains(userModelNames, poolId) {
+			continue
+		}
+		if modelLimitEnable {
+			matchingName := ratio_setting.RoutingMatchModelName(poolId)
+			if !tokenModelLimit[poolId] && !tokenModelLimit[matchingName] {
+				continue
+			}
+		}
+		userModelNames = append(userModelNames, poolId)
 	}
 
 	ownerByModel := map[string]string{}

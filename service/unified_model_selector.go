@@ -306,6 +306,43 @@ func pickWeightedCandidate(candidates []unifiedCandidate) unifiedCandidate {
 	return candidates[0]
 }
 
+// GetAvailableUnifiedModelIds returns the enabled unified pool ids that can
+// serve the request (at least one enabled member resolves to one of the
+// request's expanded groups). Clients list these ids as callable models via
+// /v1/models, so unified pools must appear there even though they never enter
+// the ability table. ownerGroups are the already-expanded serving groups of
+// the request (see modelListGroups).
+func GetAvailableUnifiedModelIds(c *gin.Context, ownerGroups []string, userGroup string) []string {
+	ids := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, unified := range unified_model_setting.GetSettings().Models {
+		if !unified.Enabled {
+			continue
+		}
+		if _, ok := seen[unified.Id]; ok {
+			continue
+		}
+		for _, member := range unified.Channels {
+			if !member.Enabled {
+				continue
+			}
+			matched := false
+			for _, group := range ownerGroups {
+				if _, ok := resolveUnifiedMemberGroup(c, member.ChannelId, group, userGroup); ok {
+					matched = true
+					break
+				}
+			}
+			if matched {
+				ids = append(ids, unified.Id)
+				seen[unified.Id] = struct{}{}
+				break
+			}
+		}
+	}
+	return ids
+}
+
 // UnifiedModelHealth is the admin-facing health snapshot for one member.
 type UnifiedModelHealth struct {
 	ChannelId     int     `json:"channel_id"`
