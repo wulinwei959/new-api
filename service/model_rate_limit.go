@@ -55,7 +55,8 @@ func ReserveModelRateLimit(model string) error {
 	if model == "" {
 		return nil
 	}
-	rpm, tpm, found := setting.GetModelRateLimit(model)
+	rpm, tpm64, found := setting.GetModelRateLimit(model)
+	tpm := int(tpm64)
 	if !found || (rpm <= 0 && tpm <= 0) {
 		return nil
 	}
@@ -124,7 +125,8 @@ func ModelRateLimitHasHeadroom(model string) bool {
 	if model == "" {
 		return true
 	}
-	rpm, tpm, found := setting.GetModelRateLimit(model)
+	rpm, tpm64, found := setting.GetModelRateLimit(model)
+	tpm := int(tpm64)
 	if !found || (rpm <= 0 && tpm <= 0) {
 		return true
 	}
