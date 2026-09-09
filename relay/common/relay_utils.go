@@ -37,6 +37,16 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 	return fullRequestURL
 }
 
+// NormalizeOpenAIBaseURL strips a trailing /v1 from a base URL. OpenAI-style
+// relay request paths already carry the /v1 segment (e.g. /v1/chat/completions),
+// so a base that ends in /v1 would produce /v1/v1/... and 404 upstream.
+// Channel types whose default base URLs historically shipped with a /v1
+// suffix (Agnes, Agnes CN, NVIDIA, SenseNova) use this to stay compatible with
+// channels that were created before the defaults were corrected.
+func NormalizeOpenAIBaseURL(baseURL string) string {
+	return strings.TrimSuffix(strings.TrimRight(baseURL, "/"), "/v1")
+}
+
 func SanitizeURLForLog(rawURL string) string {
 	if rawURL == "" {
 		return rawURL

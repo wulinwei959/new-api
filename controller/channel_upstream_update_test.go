@@ -604,3 +604,49 @@ func TestDetectAllChannelUpstreamModelUpdatesRejectsExistingActiveTask(t *testin
 	require.Contains(t, recorder.Body.String(), existing.TaskID)
 	require.Contains(t, recorder.Body.String(), "已有模型更新任务正在运行或等待中")
 }
+
+// The four OpenAI-compatible providers (Agnes, Agnes CN, NVIDIA, SenseNova)
+// shipped with default base URLs that carried a trailing /v1. Relay paths and
+// the model-list URL both add /v1, so a stored /v1 base would double it and
+// 404 upstream. Verify the fetch normalizes both legacy and current bases.
+func TestFetchNewProviderModelsNormalizesV1Base(t *testing.T) {
+	var requestedPaths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		if r.URL.Path == "/v1/models" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"data":[{"id":"provider-model-1"}]}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	for _, tc := range []struct {
+		name    string
+		chType  int
+		baseURL string
+	}{
+		{"legacy stored base ends with /v1", constant.ChannelTypeAgnes, server.URL + "/v1"},
+		{"current default base has no /v1", constant.ChannelTypeAgnes, server.URL},
+		{"agnes china legacy base", constant.ChannelTypeAgnesChina, server.URL + "/v1"},
+		{"nvidia legacy base", constant.ChannelTypeNVIDIA, server.URL + "/v1"},
+		{"sensenova current base", constant.ChannelTypeSenseNova, server.URL},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			channel := &model.Channel{
+				Type:    tc.chType,
+				Key:     "sk-test",
+				BaseURL: &tc.baseURL,
+			}
+			models, err := fetchChannelUpstreamModelIDs(channel)
+			require.NoError(t, err)
+			require.Equal(t, []string{"provider-model-1"}, models)
+		})
+	}
+
+	// Every request must land on the single-segment /v1/models path.
+	for _, p := range requestedPaths {
+		assert.Equal(t, "/v1/models", p, "double /v1 must not reach upstream")
+	}
+}

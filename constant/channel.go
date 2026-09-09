@@ -130,10 +130,10 @@ var ChannelBaseURLs = []string{
 	"",                                          //59
 	"",                                          //60
 	"",                                          //61
-	"https://apihub.agnes-ai.com/v1",            //62
-	"https://api.agnes-ai.cn/v1",                //63
-	"https://integrate.api.nvidia.com/v1",       //64
-	"https://token.sensenova.cn/v1",             //65
+	"https://apihub.agnes-ai.com",             //62
+	"https://api.agnes-ai.cn",                 //63
+	"https://integrate.api.nvidia.com",        //64
+	"https://token.sensenova.cn",             //65
 }
 
 func GetChannelBaseURL(channelType int) string {
