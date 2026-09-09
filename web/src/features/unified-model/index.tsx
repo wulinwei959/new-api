@@ -272,26 +272,28 @@ export function UnifiedModelSection() {
           <Label className='text-muted-foreground text-xs'>
             {t('Health metrics refresh every 30 seconds')}
           </Label>
+        </div>
+        <div className='flex items-center gap-2'>
           <Button
-            variant='ghost'
-            size='icon-sm'
+            variant='outline'
+            size='sm'
             onClick={() => void load()}
             disabled={loading}
-            aria-label={t('Refresh')}
           >
             <RefreshCw className={cn('size-4', loading && 'animate-spin')} />
+            {t('Refresh')}
+          </Button>
+          <Button
+            size='sm'
+            onClick={() => {
+              setEditingModel(null)
+              setEditorOpen(true)
+            }}
+          >
+            <Plus className='size-4' />
+            {t('Add Unified Model')}
           </Button>
         </div>
-        <Button
-          size='sm'
-          onClick={() => {
-            setEditingModel(null)
-            setEditorOpen(true)
-          }}
-        >
-          <Plus className='size-4' />
-          {t('Add Unified Model')}
-        </Button>
       </div>
 
       {loading ? (
