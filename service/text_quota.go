@@ -396,12 +396,16 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	billingUsage := effectiveBillingUsage(usage)
 	// Record the actual response tokens so the per-model TPM limit can be
 	// enforced on subsequent requests (no-op when the model has no limit).
+	// Unified models also count against the resolved member model.
 	if billingUsage != nil {
 		recordedTokens := int64(billingUsage.PromptTokens + billingUsage.CompletionTokens)
 		if recordedTokens == 0 {
 			recordedTokens = int64(billingUsage.TotalTokens)
 		}
 		RecordModelTokens(relayInfo.OriginModelName, recordedTokens)
+		if target := common.GetContextKeyString(ctx, constant.ContextKeyUnifiedModelTarget); target != "" && target != relayInfo.OriginModelName {
+			RecordModelTokens(target, recordedTokens)
+		}
 	}
 	if usage == nil {
 		extraContent = append(extraContent, "上游无计费信息")

@@ -10,6 +10,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	perfmetrics "github.com/QuantumNous/new-api/pkg/perf_metrics"
 	"github.com/QuantumNous/new-api/setting/unified_model_setting"
@@ -53,6 +54,27 @@ type memberStatsCacheEntry struct {
 }
 
 var memberStatsCache sync.Map // key: unifiedId|tokenGroup|userGroup -> memberStatsCacheEntry
+
+// lastAllExhaustedWarnMinute rate-limits the whole-pool-exhausted fallback
+// warning to one line per aligned minute per unified model, so sustained
+// overload cannot flood the logs (every rejected request takes that path).
+var (
+	lastAllExhaustedWarnMu     sync.Mutex
+	lastAllExhaustedWarnMinute = map[string]int64{}
+)
+
+func warnAllExhaustedFallback(c *gin.Context, unifiedId string, poolSize int) {
+	minute := time.Now().Unix() / modelRateLimitWindowSeconds
+	lastAllExhaustedWarnMu.Lock()
+	stale := lastAllExhaustedWarnMinute[unifiedId] != minute
+	if stale {
+		lastAllExhaustedWarnMinute[unifiedId] = minute
+	}
+	lastAllExhaustedWarnMu.Unlock()
+	if stale {
+		logger.LogWarn(c, fmt.Sprintf("unified model %s: all %d member(s) at their per-model rate limit, falling back to full pool (repeats suppressed for this minute)", unifiedId, poolSize))
+	}
+}
 
 // collectMemberStats resolves each enabled member's serving group and gathers
 // its performance stats over the scoring window. Members whose channel cannot
@@ -192,6 +214,17 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 		return nil, "", fmt.Errorf("no available channel in unified model %s pool", unifiedId)
 	}
 
+	// Route around members whose model is already at its per-model RPM/TPM
+	// budget so the pool fails over to a member with headroom. When the whole
+	// pool is exhausted we keep the full set for availability and let the
+	// limiter act as the backstop (429).
+	candidates, excluded, allExhausted := filterExhaustedMembers(candidates)
+	if allExhausted {
+		warnAllExhaustedFallback(c, unifiedId, len(candidates))
+	} else if excluded > 0 {
+		logger.LogDebug(c, "unified model %s: %d member(s) excluded by per-model rate limit, candidates left=%d", unifiedId, excluded, len(candidates))
+	}
+
 	selected := pickWeightedCandidate(candidates)
 	channel, err := model.CacheGetChannel(selected.ChannelId)
 	if err != nil || channel == nil {
@@ -229,6 +262,29 @@ func resolveUnifiedMemberGroup(c *gin.Context, channelId int, tokenGroup string,
 		}
 	}
 	return "", false
+}
+
+// filterExhaustedMembers drops candidates whose upstream model has no
+// per-model rate-limit headroom and reports how many were excluded. When the
+// entire input is exhausted it returns the original slice so availability is
+// preserved and the limiter acts as the backstop.
+func filterExhaustedMembers(candidates []unifiedCandidate) ([]unifiedCandidate, int, bool) {
+	kept := candidates[:0]
+	excluded := 0
+	for _, candidate := range candidates {
+		if ModelRateLimitHasHeadroom(candidate.ModelName) {
+			kept = append(kept, candidate)
+		} else {
+			excluded++
+		}
+	}
+	if excluded == 0 {
+		return candidates, 0, false
+	}
+	if len(kept) == 0 {
+		return candidates, excluded, true
+	}
+	return kept, excluded, false
 }
 
 func pickWeightedCandidate(candidates []unifiedCandidate) unifiedCandidate {

@@ -17,6 +17,11 @@ import (
 // window rolls over on the wall clock and stale keys expire.
 const modelRateLimitWindowSeconds = 60
 
+// modelRateLimitHeadroomCacheTTL bounds how long a per-model headroom read is
+// reused. It amortizes Redis reads across the selector's retry loop, which
+// consults headroom for every pool member on each retry attempt.
+const modelRateLimitHeadroomCacheTTL = time.Second
+
 // modelRateLimitKeyTTL keeps rate-limit counters alive long enough to span a
 // window rollover, then lets Redis garbage-collect them.
 const modelRateLimitKeyTTL = 2 * time.Minute
@@ -32,6 +37,16 @@ var (
 	inMemoryModelRateLimitMu      sync.Mutex
 )
 
+// modelRateLimitHeadroomCache memoizes the short-term answer of
+// ModelRateLimitHasHeadroom so per-pool selector passes (and their retries)
+// share a single read per model per TTL instead of one per attempt.
+var modelRateLimitHeadroomCache sync.Map // model -> modelRateLimitHeadroomCacheEntry
+
+type modelRateLimitHeadroomCacheEntry struct {
+	expiresAt time.Time
+	headroom  bool
+}
+
 // ReserveModelRateLimit enforces the per-model rate limit for an incoming
 // request to `model`: it pre-checks the TPM window and atomically reserves one
 // RPM slot. It returns an error (to reject the request) when a limit is
@@ -44,6 +59,9 @@ func ReserveModelRateLimit(model string) error {
 	if !found || (rpm <= 0 && tpm <= 0) {
 		return nil
 	}
+	// The counters are about to move, so any cached headroom answer for this
+	// model is stale.
+	modelRateLimitHeadroomCache.Delete(model)
 	if common.RedisEnabled {
 		return reserveRedisModelRateLimit(model, rpm, tpm)
 	}
@@ -60,6 +78,7 @@ func RecordModelTokens(model string, tokens int64) {
 	if _, _, found := setting.GetModelRateLimit(model); !found {
 		return
 	}
+	modelRateLimitHeadroomCache.Delete(model)
 	if common.RedisEnabled {
 		recordRedisModelTokens(model, tokens)
 		return
@@ -95,6 +114,83 @@ func recordMemoryModelTokens(model string, tokens int64) {
 	defer inMemoryModelRateLimitMu.Unlock()
 
 	memoryModelRateLimitWindow(model).tpm += tokens
+}
+
+// ModelRateLimitHasHeadroom reports whether `model` can still accept traffic
+// under its per-model RPM/TPM limits, without mutating any counter. Unlabeled
+// models and read failures fail open. Results are cached for
+// modelRateLimitHeadroomCacheTTL so callers polling many models share reads.
+func ModelRateLimitHasHeadroom(model string) bool {
+	if model == "" {
+		return true
+	}
+	rpm, tpm, found := setting.GetModelRateLimit(model)
+	if !found || (rpm <= 0 && tpm <= 0) {
+		return true
+	}
+	if entry, ok := modelRateLimitHeadroomCache.Load(model); ok {
+		cached := entry.(modelRateLimitHeadroomCacheEntry)
+		if time.Now().Before(cached.expiresAt) {
+			return cached.headroom
+		}
+	}
+
+	var hasHeadroom bool
+	if common.RedisEnabled {
+		hasHeadroom = redisModelRateLimitHasHeadroom(model, rpm, tpm)
+	} else {
+		hasHeadroom = memoryModelRateLimitHasHeadroom(model, rpm, tpm)
+	}
+	modelRateLimitHeadroomCache.Store(model, modelRateLimitHeadroomCacheEntry{
+		expiresAt: time.Now().Add(modelRateLimitHeadroomCacheTTL),
+		headroom:  hasHeadroom,
+	})
+	return hasHeadroom
+}
+
+func memoryModelRateLimitHasHeadroom(model string, rpm int, tpm int64) bool {
+	inMemoryModelRateLimitMu.Lock()
+	defer inMemoryModelRateLimitMu.Unlock()
+
+	window, ok := inMemoryModelRateLimitWindows[model]
+	// A rolled-over window has already been reset by the next write; its
+	// stale counts do not count against headroom.
+	if ok && window.minute != currentModelRateLimitMinute() {
+		ok = false
+	}
+	if rpm > 0 && ok && int64(window.rpm) >= int64(rpm) {
+		return false
+	}
+	return !(tpm > 0 && ok && window.tpm >= tpm)
+}
+
+func redisModelRateLimitHasHeadroom(model string, rpm int, tpm int64) bool {
+	ctx := context.Background()
+	rdb := common.RDB
+	minute := currentModelRateLimitMinute()
+
+	pipe := rdb.Pipeline()
+	var rpmCount, tpmSum *redis.StringCmd
+	if rpm > 0 {
+		rpmCount = pipe.Get(ctx, modelRateLimitRedisKey("rpm", model, minute))
+	}
+	if tpm > 0 {
+		tpmSum = pipe.Get(ctx, modelRateLimitRedisKey("tpm", model, minute))
+	}
+	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
+		return true
+	}
+	if rpmCount != nil {
+		if count, err := rpmCount.Int64(); err == nil && count >= int64(rpm) {
+			return false
+		}
+	}
+	if tpmSum != nil {
+		if sum, err := tpmSum.Int64(); err == nil && sum >= tpm {
+			return false
+		}
+	}
+	return true
 }
 
 func memoryModelRateLimitWindow(model string) *modelRateLimitWindow {
