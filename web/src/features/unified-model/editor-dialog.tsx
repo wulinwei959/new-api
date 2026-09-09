@@ -32,17 +32,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 
 import type {
   UnifiedModel,
   UnifiedModelChannelMember,
   UnifiedModelChannelOption,
+  UnifiedModelHealth,
 } from './types'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial: UnifiedModel | null
+  health?: UnifiedModelHealth[]
   channels: UnifiedModelChannelOption[]
   onSave: (model: UnifiedModel) => void
 }
@@ -199,6 +202,21 @@ export function UnifiedModelEditorDialog(props: Props) {
             <div className='flex flex-col gap-2'>
               {members.map((member, index) => {
                 const channel = selectedChannel(member)
+                const memberHealth = props.health?.find(
+                  (item) =>
+                    item.channel_id === member.channel_id &&
+                    item.model_name === member.model_name
+                )
+                let dotClass = 'bg-muted-foreground/40'
+                if (memberHealth && memberHealth.request_count > 0) {
+                  if (memberHealth.score >= 0.7) dotClass = 'bg-emerald-500'
+                  else if (memberHealth.score >= 0.4) dotClass = 'bg-amber-500'
+                  else dotClass = 'bg-red-500'
+                }
+                const latencyLabel =
+                  memberHealth && memberHealth.avg_latency_ms >= 1000
+                    ? `${(memberHealth.avg_latency_ms / 1000).toFixed(1)}s`
+                    : `${memberHealth?.avg_latency_ms ?? 0}ms`
                 return (
                   <div
                     key={member._key}
@@ -293,6 +311,27 @@ export function UnifiedModelEditorDialog(props: Props) {
                           }
                         />
                       </div>
+                    </div>
+                    <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
+                      {memberHealth && memberHealth.request_count > 0 ? (
+                        <span className='flex items-center gap-1.5'>
+                          <span
+                            className={cn('size-1.5 shrink-0 rounded-full', dotClass)}
+                          />
+                          {t('Avg Latency')} {latencyLabel} ·{' '}
+                          {t('Success Rate')} {memberHealth.success_rate}% ·{' '}
+                          {t('Avg TPS')} {memberHealth.avg_tps} · {t('Requests')}{' '}
+                          {memberHealth.request_count} · {t('Score')}{' '}
+                          {memberHealth.score.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className='flex items-center gap-1.5'>
+                          <span
+                            className={cn('size-1.5 shrink-0 rounded-full', dotClass)}
+                          />
+                          {t('No health data yet')}
+                        </span>
+                      )}
                     </div>
                     <div className='flex items-center justify-between'>
                       <div className='flex items-center gap-2'>

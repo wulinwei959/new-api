@@ -102,7 +102,7 @@ export function UnifiedModelSection() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
-  const [editingModel, setEditingModel] = useState<UnifiedModel | null>(null)
+  const [editingModel, setEditingModel] = useState<UnifiedModelRow | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -230,11 +230,7 @@ export function UnifiedModelSection() {
             variant='ghost'
             size='icon-sm'
             onClick={() => {
-              setEditingModel({
-                id: row.id,
-                enabled: row.enabled,
-                channels: row.channels,
-              })
+              setEditingModel(row)
               setEditorOpen(true)
             }}
           >
@@ -301,6 +297,7 @@ export function UnifiedModelSection() {
         open={editorOpen}
         onOpenChange={setEditorOpen}
         initial={editingModel}
+        health={editingModel?.health ?? []}
         channels={channels}
         onSave={async (model) => {
           if (!settings) return

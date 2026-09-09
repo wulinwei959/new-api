@@ -6187,6 +6187,8 @@
     "Add model rate limit": "Add model rate limit",
     "Set the request and token rate limits for a specific model.": "Set the request and token rate limits for a specific model.",
     "The model name requested by clients.": "The model name requested by clients.",
-    "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited."
+    "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.",
+    "Score": "Score",
+    "No health data yet": "Aucune donnée de santé pour le moment"
   }
 }
