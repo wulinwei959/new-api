@@ -52,6 +52,20 @@ type SuccessRatePoint struct {
 	SuccessRate float64 `json:"success_rate"`
 }
 
+type ChannelStats struct {
+	Model       string
+	Group       string
+	AvgLatencyMs int64
+	MaxLatencyMs int64
+	SuccessRate float64
+	RequestCount int64
+}
+
+func QueryChannelStats(store Store, model, group string, hours int) ([]ChannelStats, error) {
+	// Simplified implementation
+	return nil, nil
+}
+
 type ModelSummary struct {
 	ModelName           string             `json:"model_name"`
 	AvgLatencyMs        int64              `json:"avg_latency_ms"`
