@@ -29,7 +29,6 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
-import { SettingsSection } from '../../components/settings-section'
 import {
   getUnifiedModelChannels,
   getUnifiedModelSettings,
@@ -254,51 +253,49 @@ export function UnifiedModelSection() {
   ]
 
   return (
-    <SettingsSection title={t('Unified Models')}>
-      <div className='flex flex-col gap-4'>
-        {error ? (
-          <Alert variant='destructive'>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            <RefreshCw className='text-muted-foreground size-4' />
-            <Label className='text-muted-foreground text-xs'>
-              {t('Health metrics refresh every 30 seconds')}
-            </Label>
-          </div>
-          <Button
-            size='sm'
-            onClick={() => {
-              setEditingModel(null)
-              setEditorOpen(true)
-            }}
-          >
-            <Plus className='size-4' />
-            {t('Add Unified Model')}
-          </Button>
+    <div className='flex flex-col gap-4'>
+      {error ? (
+        <Alert variant='destructive'>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <RefreshCw className='text-muted-foreground size-4' />
+          <Label className='text-muted-foreground text-xs'>
+            {t('Health metrics refresh every 30 seconds')}
+          </Label>
         </div>
-
-        {loading ? (
-          <div className='text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm'>
-            {t('Loading...')}
-          </div>
-        ) : (
-          <StaticDataTable
-            columns={columns}
-            data={settings?.models ?? []}
-            getRowKey={(row) => row.id}
-            emptyContent={
-              <div className='text-muted-foreground p-6 text-center text-sm'>
-                {t(
-                  'No unified models configured. Create one and point clients at its ID, e.g. "auto".'
-                )}
-              </div>
-            }
-          />
-        )}
+        <Button
+          size='sm'
+          onClick={() => {
+            setEditingModel(null)
+            setEditorOpen(true)
+          }}
+        >
+          <Plus className='size-4' />
+          {t('Add Unified Model')}
+        </Button>
       </div>
+
+      {loading ? (
+        <div className='text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm'>
+          {t('Loading...')}
+        </div>
+      ) : (
+        <StaticDataTable
+          columns={columns}
+          data={settings?.models ?? []}
+          getRowKey={(row) => row.id}
+          emptyContent={
+            <div className='text-muted-foreground p-6 text-center text-sm'>
+              {t(
+                'No unified models configured. Create one and point clients at its ID, e.g. "auto".'
+              )}
+            </div>
+          }
+        />
+      )}
 
       <UnifiedModelEditorDialog
         open={editorOpen}
@@ -343,6 +340,6 @@ export function UnifiedModelSection() {
           </div>
         </Dialog>
       ) : null}
-    </SettingsSection>
+    </div>
   )
 }

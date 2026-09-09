@@ -29,6 +29,7 @@ import {
   MessageSquare,
   PlugZap,
   Radio,
+  Route,
   ServerCog,
   Settings,
   ShieldCheck,
@@ -141,6 +142,11 @@ export function useSidebarData(): SidebarData {
             title: t('Models'),
             url: '/models/metadata',
             icon: Box,
+          },
+          {
+            title: t('Unified Models'),
+            url: '/unified-model',
+            icon: Route,
           },
           {
             title: t('Users'),
