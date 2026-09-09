@@ -6173,6 +6173,20 @@
     "Zero retention": "データ保持なし",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Rate Limits": "Rate Limits",
+    "Model rate limits": "Model rate limits",
+    "Requests / minute": "Requests / minute",
+    "Tokens / minute": "Tokens / minute",
+    "Search model names...": "Search model names...",
+    "e.g., gpt-4o, claude-3-opus": "e.g., gpt-4o, claude-3-opus",
+    "Max requests per minute, 0 = unlimited": "Max requests per minute, 0 = unlimited",
+    "Max tokens per minute, 0 = unlimited": "Max tokens per minute, 0 = unlimited",
+    "No per-model rate limits configured. Click \"Add model\" to get started.": "No per-model rate limits configured. Click \"Add model\" to get started.",
+    "Edit model rate limit": "Edit model rate limit",
+    "Add model rate limit": "Add model rate limit",
+    "Set the request and token rate limits for a specific model.": "Set the request and token rate limits for a specific model.",
+    "The model name requested by clients.": "The model name requested by clients.",
+    "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited."
   }
 }

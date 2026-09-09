@@ -6173,6 +6173,20 @@
     "Zero retention": "零數據保留",
     "Zhipu": "智譜",
     "Zhipu V4": "智譜 V4",
-    "Zoom": "縮放"
+    "Zoom": "縮放",
+    "Rate Limits": "限速",
+    "Model rate limits": "模型限速",
+    "Requests / minute": "每分鐘請求數",
+    "Tokens / minute": "每分鐘 Token 數",
+    "Search model names...": "搜尋模型名稱...",
+    "e.g., gpt-4o, claude-3-opus": "例如 gpt-4o、claude-3-opus",
+    "Max requests per minute, 0 = unlimited": "每分鐘最大請求數，0 表示不限制",
+    "Max tokens per minute, 0 = unlimited": "每分鐘最大 Token 數，0 表示不限制",
+    "No per-model rate limits configured. Click \"Add model\" to get started.": "尚未設定按模型限速。點擊「新增模型」開始。",
+    "Edit model rate limit": "編輯模型限速",
+    "Add model rate limit": "新增模型限速",
+    "Set the request and token rate limits for a specific model.": "為指定模型設定請求數與 Token 限速。",
+    "The model name requested by clients.": "客戶端請求的模型名稱。",
+    "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "按模型限速。RPM 限制每分鐘請求數，TPM 限制每分鐘 Token 數。值為 0 表示該維度不限制。"
   }
 }
