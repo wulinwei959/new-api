@@ -6262,5 +6262,6 @@
   "Use the existing token total": "Sử dụng tổng token hiện có",
   "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.": "Dùng tier(name, fixed(amount)) để đặt giá USD cho mỗi yêu cầu. Hệ số nhóm và yêu cầu vẫn được áp dụng.",
   "When conditions match": "Khi điều kiện thỏa mãn",
-  "When conditions match → {{name}}": "Điều kiện thỏa mãn → {{name}}"
+  "When conditions match → {{name}}": "Điều kiện thỏa mãn → {{name}}",
+  "footer.new\\u0061pi.projectAttributionSuffix": "Bản quyền được bảo lưu. Được thiết kế và phát triển bởi các cộng tác viên dự án."
 }

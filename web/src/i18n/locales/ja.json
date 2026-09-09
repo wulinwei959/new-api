@@ -6262,5 +6262,6 @@
   "Use the existing token total": "既存のトークン合計を使用",
   "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.": "tier(name, fixed(amount)) でリクエストごとの米ドル価格を設定します。グループ倍率とリクエスト倍率も適用されます。",
   "When conditions match": "条件を満たす場合",
-  "When conditions match → {{name}}": "条件を満たす → {{name}}"
+  "When conditions match → {{name}}": "条件を満たす → {{name}}",
+  "footer.new\\u0061pi.projectAttributionSuffix": "すべての権利を留保します。プロジェクトコントリビューターにより設計・開発されています。"
 }

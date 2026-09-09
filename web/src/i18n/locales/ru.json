@@ -6262,5 +6262,6 @@
   "Use the existing token total": "Использовать текущую сумму токенов",
   "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.": "Используйте tier(name, fixed(amount)) для цены за запрос в USD. Множители группы и запроса по-прежнему применяются.",
   "When conditions match": "Если условия выполнены",
-  "When conditions match → {{name}}": "Условия выполнены → {{name}}"
+  "When conditions match → {{name}}": "Условия выполнены → {{name}}",
+  "footer.new\\u0061pi.projectAttributionSuffix": "Все права защищены. Разработано участниками проекта."
 }

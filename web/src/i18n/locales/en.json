@@ -6262,5 +6262,6 @@
   "Use the existing token total": "Use the existing token total",
   "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.": "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.",
   "When conditions match": "When conditions match",
-  "When conditions match → {{name}}": "When conditions match → {{name}}"
+  "When conditions match → {{name}}": "When conditions match → {{name}}",
+  "footer.new\\u0061pi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors."
 }

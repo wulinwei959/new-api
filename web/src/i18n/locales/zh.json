@@ -6262,5 +6262,6 @@
   "Use the existing token total": "使用现有 token 总长度",
   "Use tier(name, fixed(amount)) for a USD price per request. Group and request multipliers still apply.": "使用 tier(name, fixed(amount)) 设置以美元计价的每次请求价格。分组倍率和请求倍率仍然生效。",
   "When conditions match": "条件成立时",
-  "When conditions match → {{name}}": "条件成立 → {{name}}"
+  "When conditions match → {{name}}": "条件成立 → {{name}}",
+  "footer.new\\u0061pi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。"
 }
