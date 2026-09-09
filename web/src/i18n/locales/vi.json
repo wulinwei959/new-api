@@ -6189,6 +6189,7 @@
     "The model name requested by clients.": "The model name requested by clients.",
     "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.",
     "Score": "Điểm",
-    "No health data yet": "Chưa có dữ liệu sức khỏe"
+    "No health data yet": "Chưa có dữ liệu sức khỏe",
+    "Max Latency": "Độ trễ tối đa"
   }
 }

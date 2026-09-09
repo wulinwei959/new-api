@@ -18,6 +18,7 @@ type PerfMetric struct {
 	RequestCount   int64  `json:"-" gorm:"default:0"`
 	SuccessCount   int64  `json:"-" gorm:"default:0"`
 	TotalLatencyMs int64  `json:"-" gorm:"default:0"`
+	MaxLatencyMs   int64  `json:"-" gorm:"default:0"`
 	TtftSumMs      int64  `json:"-" gorm:"default:0"`
 	TtftCount      int64  `json:"-" gorm:"default:0"`
 	OutputTokens   int64  `json:"-" gorm:"default:0"`
@@ -59,6 +60,10 @@ func UpsertPerfMetric(metric *PerfMetric) error {
 			"request_count":    gorm.Expr("perf_metrics.request_count + ?", metric.RequestCount),
 			"success_count":    gorm.Expr("perf_metrics.success_count + ?", metric.SuccessCount),
 			"total_latency_ms": gorm.Expr("perf_metrics.total_latency_ms + ?", metric.TotalLatencyMs),
+			"max_latency_ms": gorm.Expr(
+				"CASE WHEN perf_metrics.max_latency_ms < ? THEN ? ELSE perf_metrics.max_latency_ms END",
+				metric.MaxLatencyMs, metric.MaxLatencyMs,
+			),
 			"ttft_sum_ms":      gorm.Expr("perf_metrics.ttft_sum_ms + ?", metric.TtftSumMs),
 			"ttft_count":       gorm.Expr("perf_metrics.ttft_count + ?", metric.TtftCount),
 			"output_tokens":    gorm.Expr("perf_metrics.output_tokens + ?", metric.OutputTokens),

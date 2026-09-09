@@ -141,6 +141,7 @@ type ChannelStats struct {
 	RequestCount int64   `json:"request_count"`
 	SuccessCount int64   `json:"success_count"`
 	AvgLatencyMs int64   `json:"avg_latency_ms"`
+	MaxLatencyMs int64   `json:"max_latency_ms"`
 	AvgTtftMs    int64   `json:"avg_ttft_ms"`
 	AvgTps       float64 `json:"avg_tps"`
 	SuccessRate  float64 `json:"success_rate"`
@@ -172,6 +173,7 @@ func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
 		current.requestCount += value.requestCount
 		current.successCount += value.successCount
 		current.totalLatencyMs += value.totalLatencyMs
+		current.maxLatencyMs = max(current.maxLatencyMs, value.maxLatencyMs)
 		current.ttftSumMs += value.ttftSumMs
 		current.ttftCount += value.ttftCount
 		current.outputTokens += value.outputTokens
@@ -188,6 +190,7 @@ func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
 			requestCount:   row.RequestCount,
 			successCount:   row.SuccessCount,
 			totalLatencyMs: row.TotalLatencyMs,
+			maxLatencyMs:   row.MaxLatencyMs,
 			ttftSumMs:      row.TtftSumMs,
 			ttftCount:      row.TtftCount,
 			outputTokens:   row.OutputTokens,
@@ -218,6 +221,7 @@ func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
 			RequestCount: value.requestCount,
 			SuccessCount: value.successCount,
 			AvgLatencyMs: avg(value.totalLatencyMs, value.requestCount),
+			MaxLatencyMs: value.maxLatencyMs,
 			AvgTtftMs:    avg(value.ttftSumMs, value.ttftCount),
 			AvgTps:       math.Round(avgTps(value)*100) / 100,
 			SuccessRate:  math.Round(successRate(value)*100) / 100,

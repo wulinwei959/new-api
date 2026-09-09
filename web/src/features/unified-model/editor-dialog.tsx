@@ -217,6 +217,10 @@ export function UnifiedModelEditorDialog(props: Props) {
                   memberHealth && memberHealth.avg_latency_ms >= 1000
                     ? `${(memberHealth.avg_latency_ms / 1000).toFixed(1)}s`
                     : `${memberHealth?.avg_latency_ms ?? 0}ms`
+                const maxLatencyLabel =
+                  memberHealth && memberHealth.max_latency_ms >= 1000
+                    ? `${(memberHealth.max_latency_ms / 1000).toFixed(1)}s`
+                    : `${memberHealth?.max_latency_ms ?? 0}ms`
                 return (
                   <div
                     key={member._key}
@@ -318,7 +322,8 @@ export function UnifiedModelEditorDialog(props: Props) {
                           <span
                             className={cn('size-1.5 shrink-0 rounded-full', dotClass)}
                           />
-                          {t('Avg Latency')} {latencyLabel} ·{' '}
+                          {t('Avg Latency')} {latencyLabel} · {t('Max Latency')}{' '}
+                          {maxLatencyLabel} ·{' '}
                           {t('Success Rate')} {memberHealth.success_rate}% ·{' '}
                           {t('Avg TPS')} {memberHealth.avg_tps} · {t('Requests')}{' '}
                           {memberHealth.request_count} · {t('Score')}{' '}

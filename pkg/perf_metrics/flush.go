@@ -46,6 +46,7 @@ func flushCompletedBuckets() {
 			RequestCount:   drained.requestCount,
 			SuccessCount:   drained.successCount,
 			TotalLatencyMs: drained.totalLatencyMs,
+			MaxLatencyMs:   drained.maxLatencyMs,
 			TtftSumMs:      drained.ttftSumMs,
 			TtftCount:      drained.ttftCount,
 			OutputTokens:   drained.outputTokens,
@@ -83,6 +84,9 @@ func redisCounters(values map[string]string) counters {
 		requestCount:   parseRedisInt(values["req"]),
 		successCount:   parseRedisInt(values["ok"]),
 		totalLatencyMs: parseRedisInt(values["lat"]),
+		// lat_max is only written by deployments that track max per bucket;
+		// the Redis hot path records sums via HIncrBy and cannot merge maxima.
+		maxLatencyMs: parseRedisInt(values["lat_max"]),
 		ttftSumMs:      parseRedisInt(values["ttft"]),
 		ttftCount:      parseRedisInt(values["ttft_n"]),
 		outputTokens:   parseRedisInt(values["out"]),

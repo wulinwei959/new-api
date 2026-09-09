@@ -19,6 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 import { StaticDataTable } from '@/components/data-table'
@@ -49,7 +51,7 @@ type UnifiedModelRow = UnifiedModelSettingsData['models'][number]
 function aggregateHealth(row: UnifiedModelRow) {
   const withData = row.health.filter((item) => item.request_count > 0)
   if (withData.length === 0) {
-    return { latency: 0, successRate: 0, tps: 0, hasData: false }
+    return { latency: 0, maxLatency: 0, successRate: 0, tps: 0, hasData: false }
   }
   const totalRequests = withData.reduce(
     (sum, item) => sum + item.request_count,
@@ -77,7 +79,11 @@ function aggregateHealth(row: UnifiedModelRow) {
       ) / totalRequests
     ).toFixed(2)
   )
-  return { latency, successRate, tps, hasData: true }
+  const maxLatency = withData.reduce(
+    (peak, item) => Math.max(peak, item.max_latency_ms),
+    0
+  )
+  return { latency, maxLatency, successRate, tps, hasData: true }
 }
 
 function latencyClass(latencyMs: number) {
@@ -189,10 +195,15 @@ export function UnifiedModelSection() {
       id: 'latency',
       header: t('Avg Latency'),
       cell: (row: UnifiedModelRow) => {
-        const { latency, hasData } = aggregateHealth(row)
+        const { latency, maxLatency, hasData } = aggregateHealth(row)
         if (!hasData) return <span className='text-muted-foreground'>—</span>
         return (
-          <span className={latencyClass(latency)}>{latency} ms</span>
+          <span className='flex flex-col leading-tight'>
+            <span className={latencyClass(latency)}>{latency} ms</span>
+            <span className='text-muted-foreground text-xs'>
+              {t('Max Latency')} {maxLatency} ms
+            </span>
+          </span>
         )
       },
     },
@@ -261,6 +272,15 @@ export function UnifiedModelSection() {
           <Label className='text-muted-foreground text-xs'>
             {t('Health metrics refresh every 30 seconds')}
           </Label>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            onClick={() => void load()}
+            disabled={loading}
+            aria-label={t('Refresh')}
+          >
+            <RefreshCw className={cn('size-4', loading && 'animate-spin')} />
+          </Button>
         </div>
         <Button
           size='sm'

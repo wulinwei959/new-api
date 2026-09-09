@@ -352,6 +352,7 @@ type UnifiedModelHealth struct {
 	RequestCount  int64   `json:"request_count"`
 	SuccessRate   float64 `json:"success_rate"`
 	AvgLatencyMs  int64   `json:"avg_latency_ms"`
+	MaxLatencyMs  int64   `json:"max_latency_ms"`
 	AvgTps        float64 `json:"avg_tps"`
 	Score         float64 `json:"score"`
 	WeightedScore float64 `json:"weighted_score"`
@@ -379,6 +380,7 @@ func GetUnifiedModelHealth(c *gin.Context, unifiedId string) ([]UnifiedModelHeal
 			RequestCount: entry.Stats.RequestCount,
 			SuccessRate:  entry.Stats.SuccessRate,
 			AvgLatencyMs: entry.Stats.AvgLatencyMs,
+			MaxLatencyMs: entry.Stats.MaxLatencyMs,
 			AvgTps:       entry.Stats.AvgTps,
 		}
 		if found && entry.HasData {

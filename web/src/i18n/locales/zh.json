@@ -6189,6 +6189,7 @@
     "The model name requested by clients.": "客户端请求的模型名称。",
     "Per-model rate limits. RPM caps requests per minute; TPM caps tokens per minute. A value of 0 leaves that dimension unlimited.": "按模型限速。RPM 限制每分钟请求数，TPM 限制每分钟 Token 数。取值为 0 表示该维度不限制。",
     "Score": "评分",
-    "No health data yet": "暂无健康数据"
+    "No health data yet": "暂无健康数据",
+    "Max Latency": "最大延迟"
   }
 }

@@ -39,6 +39,7 @@ export interface UnifiedModelHealth {
   request_count: number
   success_rate: number
   avg_latency_ms: number
+  max_latency_ms: number
   avg_tps: number
   score: number
   weighted_score: number
