@@ -40,6 +40,7 @@ const (
 
 // memberStat is one pool member's resolved group and live performance data.
 type memberStat struct {
+	Groups  []string
 	Group   string
 	Enabled bool
 	Weight  int
@@ -117,26 +118,50 @@ func collectMemberStatsUncached(c *gin.Context, unified unified_model_setting.Un
 			result[member.ChannelId] = entry
 			continue
 		}
-		group, ok := resolveUnifiedMemberGroup(c, member.ChannelId, tokenGroup, userGroup)
-		if !ok {
+		groups, ok := resolveUnifiedMemberGroup(c, member.ChannelId, tokenGroup, userGroup)
+		if !ok || len(groups) == 0 {
 			continue
 		}
-		entry.Group = group
-		groupStats, cached := statsByGroupCache[group]
-		if !cached {
-			var err error
-			groupStats, err = perfmetrics.QueryChannelStats(perfmetrics.QueryParams{
-				Model: unified.Id,
-				Group: group,
-				Hours: windowHours,
-			})
-			if err != nil {
-				groupStats = map[int]perfmetrics.ChannelStats{}
+		entry.Groups = groups
+		entry.Group = groups[0]
+		var totalCount, totalSuccess, totalLatency int64
+		var totalTtft, totalTtftN int64
+		var totalGenMs int64
+		for _, group := range groups {
+			groupStats, cached := statsByGroupCache[group]
+			if !cached {
+				var err error
+				groupStats, err = perfmetrics.QueryChannelStats(perfmetrics.QueryParams{Model: unified.Id, Group: group, Hours: windowHours})
+				if err != nil {
+					groupStats = map[int]perfmetrics.ChannelStats{}
+				}
+				statsByGroupCache[group] = groupStats
 			}
-			statsByGroupCache[group] = groupStats
+			if stat, ok := groupStats[member.ChannelId]; ok && stat.RequestCount > 0 {
+				totalCount += stat.RequestCount
+				totalSuccess += stat.SuccessCount
+				totalLatency += stat.AvgLatencyMs * stat.RequestCount
+				totalTtft += stat.AvgTtftMs * stat.TtftCount
+				totalTtftN += stat.TtftCount
+				// avg_tps = output_tokens / generation_seconds
+				// generation_seconds ≈ request_count / avg_tps / 1000
+				// rearrange: gen_ms = request_count * 1000 / avg_tps when tps > 0
+				if stat.AvgTps > 0 {
+					totalGenMs += int64(float64(stat.RequestCount) * 1000.0 / stat.AvgTps)
+				}
+			}
 		}
-		if stat, ok := groupStats[member.ChannelId]; ok && stat.RequestCount > 0 {
-			entry.Stats = stat
+		if totalCount > 0 {
+			entry.Stats = perfmetrics.ChannelStats{
+				Group:        entry.Group,
+				ChannelId:    member.ChannelId,
+				RequestCount: totalCount,
+				SuccessCount: totalSuccess,
+				AvgLatencyMs: totalLatency / totalCount,
+				AvgTtftMs:    totalTtft / max(totalTtftN, 1),
+				AvgTps:       func() float64 { if totalGenMs <= 0 { return 0 }; return float64(totalCount) / (float64(totalGenMs) / 1000.0) }(),
+				SuccessRate:  float64(totalSuccess) / float64(totalCount) * 100,
+			}
 			entry.HasData = true
 		}
 		result[member.ChannelId] = entry
@@ -240,28 +265,28 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 
 // resolveUnifiedMemberGroup checks the member channel serves at least one group
 // the request may use, returning that group for ratio resolution and logging.
-func resolveUnifiedMemberGroup(c *gin.Context, channelId int, tokenGroup string, userGroup string) (string, bool) {
+func resolveUnifiedMemberGroup(c *gin.Context, channelId int, tokenGroup string, userGroup string) ([]string, bool) {
 	channel, err := model.CacheGetChannel(channelId)
 	if err != nil || channel == nil || channel.Status != common.ChannelStatusEnabled {
-		return "", false
+		return nil, false
 	}
 	channelGroups := channel.GetGroups()
 	if tokenGroup == "auto" {
 		for _, g := range GetRequestAutoGroups(c, userGroup) {
 			for _, channelGroup := range channelGroups {
 				if channelGroup == g {
-					return g, true
+					return append([]string{}, g), true
 				}
 			}
 		}
-		return "", false
+		return nil, false
 	}
 	for _, channelGroup := range channelGroups {
 		if channelGroup == tokenGroup {
-			return tokenGroup, true
+			return []string{tokenGroup}, true
 		}
 	}
-	return "", false
+	return nil, false
 }
 
 // filterExhaustedMembers drops candidates whose upstream model has no

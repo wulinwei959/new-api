@@ -61,6 +61,27 @@ func TestScoreMemberNeutralWithoutData(t *testing.T) {
 	assert.Equal(t, neutralScore, scoreMember(zeroRequests))
 }
 
+
+func TestMemberStatAggregatesMultiGroup(t *testing.T) {
+	// Groups 字段在聚合多 group 统计时应当被正确填充。
+	entry := memberStat{
+		Groups:  []string{"groupA", "groupB"},
+		Group:   "groupA",
+		Enabled: true,
+		Weight:  100,
+		HasData: true,
+		Stats: perfmetrics.ChannelStats{
+			RequestCount: 200,
+			SuccessRate:  90,
+			AvgLatencyMs: 500,
+			AvgTps:       10,
+		},
+	}
+	assert.Equal(t, []string{"groupA", "groupB"}, entry.Groups)
+	assert.Equal(t, "groupA", entry.Group)
+	assert.Greater(t, scoreMember(entry), 0.5, "有数据的成员分数应高于 neutral")
+}
+
 func TestPickWeightedCandidate(t *testing.T) {
 	high := unifiedCandidate{ChannelId: 1, Score: 0.9, Weight: 100}
 	low := unifiedCandidate{ChannelId: 2, Score: 0.1, Weight: 100}
