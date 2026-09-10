@@ -44,6 +44,10 @@ const (
 	ContextKeyAutoGroupIndex      ContextKey = "auto_group_index"
 	ContextKeyAutoGroupRetryIndex ContextKey = "auto_group_retry_index"
 
+	// 统一模型路由：面向客户端的模型池 id，以及本次重试中选择器实际选中的上游模型名。
+	ContextKeyUnifiedModelId     ContextKey = "unified_model_id"
+	ContextKeyUnifiedModelTarget ContextKey = "unified_model_target_model"
+
 	/* user related keys */
 	ContextKeyUserId      ContextKey = "id"
 	ContextKeyUserSetting ContextKey = "user_setting"
@@ -79,10 +83,4 @@ const (
 	ContextKeyTokenAuditParams ContextKey = "token_audit_params"
 	// ContextKeyTokenAuditSucceeded disambiguates token responses that exceed the audit buffer.
 	ContextKeyTokenAuditSucceeded ContextKey = "token_audit_succeeded"
-)
-
-// 统一模型相关上下文键
-const (
-	ContextKeyUnifiedModelId = "unified_model_id"
-	ContextKeyUnifiedModelTarget = "unified_model_target"
 )

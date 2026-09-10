@@ -1001,3 +1001,10 @@ func channelAffinityUsageCacheStatsLock(key string) *sync.Mutex {
 	idx := h.Sum32() % uint32(len(channelAffinityUsageCacheStatsLocks))
 	return &channelAffinityUsageCacheStatsLocks[idx]
 }
+
+// ClearChannelAffinityUsageCacheStatsCache 清空渠道亲和用量统计缓存，
+// 仅用于测试，保证用例之间相互隔离。
+func ClearChannelAffinityUsageCacheStatsCache() {
+	channelAffinityUsageCacheStatsOnce = sync.Once{}
+	channelAffinityUsageCacheStatsCache = nil
+}

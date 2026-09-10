@@ -59,6 +59,10 @@ const (
 	ChannelTypeSub2API        = 59
 	ChannelTypeNewAPI         = 60
 	ChannelTypeTaskPlugin     = 61
+	ChannelTypeAgnes          = 62
+	ChannelTypeAgnesChina     = 63
+	ChannelTypeNVIDIA         = 64
+	ChannelTypeSenseNova      = 65
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
 
 )
@@ -126,6 +130,10 @@ var ChannelBaseURLs = []string{
 	"",                                          //59
 	"",                                          //60
 	"",                                          //61
+	"https://apihub.agnes-ai.com",               //62
+	"https://api.agnes-ai.cn",                   //63
+	"https://integrate.api.nvidia.com",          //64
+	"https://token.sensenova.cn",                //65
 }
 
 func GetChannelBaseURL(channelType int) string {
@@ -194,6 +202,10 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeSub2API:        "Sub2API",
 	ChannelTypeNewAPI:         "New API",
 	ChannelTypeTaskPlugin:     "Task Plugin",
+	ChannelTypeAgnes:          "AgnesAI",
+	ChannelTypeAgnesChina:     "AgnesAI CN",
+	ChannelTypeNVIDIA:         "NVIDIA NIM",
+	ChannelTypeSenseNova:      "SenseNova",
 }
 
 func GetChannelTypeName(channelType int) string {

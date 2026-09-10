@@ -37,6 +37,14 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 	return fullRequestURL
 }
 
+// NormalizeOpenAIBaseURL 去掉基础地址末尾的 /v1。OpenAI 风格的中转请求路径本身已带
+// /v1 分段（如 /v1/chat/completions），若基础地址以 /v1 结尾会拼出 /v1/v1/... 导致
+// 上游 404。默认基础地址历史上带 /v1 后缀的渠道类型（Agnes、Agnes 国内版、NVIDIA、
+// SenseNova）借助它兼容在默认值修正前创建的渠道。
+func NormalizeOpenAIBaseURL(baseURL string) string {
+	return strings.TrimSuffix(strings.TrimRight(baseURL, "/"), "/v1")
+}
+
 func SanitizeURLForLog(rawURL string) string {
 	if rawURL == "" {
 		return rawURL

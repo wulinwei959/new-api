@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -260,6 +261,21 @@ func ListModels(c *gin.Context, modelType int) {
 			continue
 		}
 		userModelNames = append(userModelNames, modelName)
+	}
+
+	// 统一模型池不写入能力表（计费按成员解析），因此直接追加可服务本次请求的模型池，
+	// 也不套用计费配置过滤。
+	for _, poolId := range service.GetAvailableUnifiedModelIds(c, groups.ownerGroups, groups.userGroup) {
+		if slices.Contains(userModelNames, poolId) {
+			continue
+		}
+		if modelLimitEnable {
+			matchingName := ratio_setting.RoutingMatchModelName(poolId)
+			if !tokenModelLimit[poolId] && !tokenModelLimit[matchingName] {
+				continue
+			}
+		}
+		userModelNames = append(userModelNames, poolId)
 	}
 
 	ownerByModel := map[string]string{}

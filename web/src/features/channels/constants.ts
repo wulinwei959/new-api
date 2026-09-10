@@ -84,6 +84,10 @@ export const CHANNEL_TYPES = {
   59: 'Sub2API',
   60: 'New API',
   61: 'Task Plugin',
+  62: 'AgnesAI',
+  63: 'AgnesAI CN',
+  64: 'NVIDIA NIM',
+  65: 'SenseNova',
 } as const
 
 const CHANNEL_TYPE_DISPLAY_ORDER: number[] = [

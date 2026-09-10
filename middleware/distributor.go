@@ -21,6 +21,7 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/types"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
+	unified_model_setting "github.com/QuantumNous/new-api/setting/unified_model_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -157,13 +158,25 @@ func Distribute() func(c *gin.Context) {
 				}
 
 				if channel == nil {
-					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:         c,
-						ModelName:   modelRequest.Model,
-						TokenGroup:  usingGroup,
-						RequestPath: c.Request.URL.Path,
-						Retry:       common.GetPointer(0),
-					})
+					if unified_model_setting.IsUnifiedModel(modelRequest.Model) {
+						excludeChannels := service.ParseExcludeChannelIds(
+							c.GetStringSlice("use_channel"),
+						)
+						channel, selectGroup, err = service.SelectUnifiedModelChannel(
+							c,
+							modelRequest.Model,
+							usingGroup,
+							excludeChannels,
+						)
+					} else {
+						channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
+							Ctx:         c,
+							ModelName:   modelRequest.Model,
+							TokenGroup:  usingGroup,
+							RequestPath: c.Request.URL.Path,
+							Retry:       common.GetPointer(0),
+						})
+					}
 					if err != nil {
 						showGroup := usingGroup
 						if usingGroup == "auto" {

@@ -45,6 +45,7 @@ func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens i
 	Record(Sample{
 		Model:        info.OriginModelName,
 		Group:        info.UsingGroup,
+		ChannelId:    info.ChannelId,
 		LatencyMs:    latencyMs,
 		TtftMs:       ttftMs,
 		HasTtft:      hasTtft,
@@ -67,9 +68,10 @@ func Record(sample Sample) {
 	}
 
 	key := bucketKey{
-		model:    sample.Model,
-		group:    sample.Group,
-		bucketTs: bucketStart(time.Now().Unix()),
+		model:     sample.Model,
+		group:     sample.Group,
+		channelId: sample.ChannelId,
+		bucketTs:  bucketStart(time.Now().Unix()),
 	}
 	actual, _ := hotBuckets.LoadOrStore(key, &atomicBucket{})
 	actual.(*atomicBucket).add(sample)
@@ -87,11 +89,12 @@ func Query(params QueryParams) (QueryResult, error) {
 	startTs := endTs - int64(params.Hours)*3600
 
 	merged := map[bucketKey]counters{}
-	rows, err := model.GetPerfMetrics(params.Model, params.Group, startTs, endTs)
+	rows, err := model.GetPerfMetrics(params.Model, params.Group, params.ChannelId, startTs, endTs)
 	if err != nil {
 		return QueryResult{}, err
 	}
 	for _, row := range rows {
+		// 跨渠道聚合：模型广场按“模型+分组”粒度展示，因此把按渠道拆分的行合并进分组桶。
 		mergeCounters(merged, bucketKey{
 			model:    row.ModelName,
 			group:    row.Group,
@@ -115,11 +118,114 @@ func Query(params QueryParams) (QueryResult, error) {
 		if params.Group != "" && k.group != params.Group {
 			return true
 		}
-		mergeCounters(merged, k, value.(*atomicBucket).snapshot())
+		if params.ChannelId != 0 && k.channelId != params.ChannelId {
+			return true
+		}
+		mergeCounters(merged, bucketKey{
+			model:    k.model,
+			group:    k.group,
+			bucketTs: k.bucketTs,
+		}, value.(*atomicBucket).snapshot())
 		return true
 	})
 
 	return buildQueryResult(params.Model, merged), nil
+}
+
+// ChannelStats 是按（分组、渠道）聚合的性能数据，统一模型选择器用它给模型池成员打分。
+type ChannelStats struct {
+	Group        string  `json:"group"`
+	ChannelId    int     `json:"channel_id"`
+	RequestCount int64   `json:"request_count"`
+	SuccessCount int64   `json:"success_count"`
+	AvgLatencyMs int64   `json:"avg_latency_ms"`
+	MaxLatencyMs int64   `json:"max_latency_ms"`
+	AvgTtftMs    int64   `json:"avg_ttft_ms"`
+	AvgTps       float64 `json:"avg_tps"`
+	SuccessRate  float64 `json:"success_rate"`
+}
+
+// QueryChannelStats 按渠道聚合指定模型在时间窗口内的性能指标，
+// 合并已落库的数据与内存中的热桶。
+func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
+	if params.Hours <= 0 {
+		params.Hours = 24
+	}
+	if params.Hours > 24*30 {
+		params.Hours = 24 * 30
+	}
+	endTs := time.Now().Unix()
+	startTs := endTs - int64(params.Hours)*3600
+
+	type chanKey struct {
+		group     string
+		channelId int
+	}
+	merged := map[chanKey]counters{}
+	add := func(group string, channelId int, value counters) {
+		if value.requestCount == 0 {
+			return
+		}
+		k := chanKey{group: group, channelId: channelId}
+		current := merged[k]
+		current.requestCount += value.requestCount
+		current.successCount += value.successCount
+		current.totalLatencyMs += value.totalLatencyMs
+		current.maxLatencyMs = max(current.maxLatencyMs, value.maxLatencyMs)
+		current.ttftSumMs += value.ttftSumMs
+		current.ttftCount += value.ttftCount
+		current.outputTokens += value.outputTokens
+		current.generationMs += value.generationMs
+		merged[k] = current
+	}
+
+	rows, err := model.GetPerfMetrics(params.Model, params.Group, 0, startTs, endTs)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		add(row.Group, row.ChannelId, counters{
+			requestCount:   row.RequestCount,
+			successCount:   row.SuccessCount,
+			totalLatencyMs: row.TotalLatencyMs,
+			maxLatencyMs:   row.MaxLatencyMs,
+			ttftSumMs:      row.TtftSumMs,
+			ttftCount:      row.TtftCount,
+			outputTokens:   row.OutputTokens,
+			generationMs:   row.GenerationMs,
+		})
+	}
+
+	hotBuckets.Range(func(key, value any) bool {
+		k := key.(bucketKey)
+		if k.model != params.Model || k.bucketTs < startTs || k.bucketTs > endTs {
+			return true
+		}
+		if params.Group != "" && k.group != params.Group {
+			return true
+		}
+		add(k.group, k.channelId, value.(*atomicBucket).snapshot())
+		return true
+	})
+
+	stats := make(map[int]ChannelStats, len(merged))
+	for k, value := range merged {
+		if value.requestCount == 0 {
+			continue
+		}
+		stats[k.channelId] = ChannelStats{
+			Group:        k.group,
+			ChannelId:    k.channelId,
+			RequestCount: value.requestCount,
+			SuccessCount: value.successCount,
+			AvgLatencyMs: avg(value.totalLatencyMs, value.requestCount),
+			MaxLatencyMs: value.maxLatencyMs,
+			AvgTtftMs:    avg(value.ttftSumMs, value.ttftCount),
+			AvgTps:       math.Round(avgTps(value)*100) / 100,
+			SuccessRate:  math.Round(successRate(value)*100) / 100,
+		}
+	}
+	return stats, nil
 }
 
 func QuerySummaryAll(hours int, groups []string) (SummaryAllResult, error) {
@@ -427,7 +533,7 @@ func mergeRedisActiveBuckets(merged map[bucketKey]counters, params QueryParams, 
 	if active < startTs || active > endTs {
 		return
 	}
-	key := bucketKey{model: params.Model, group: params.Group, bucketTs: active}
+	key := bucketKey{model: params.Model, group: params.Group, channelId: params.ChannelId, bucketTs: active}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	values, err := common.RDB.HGetAll(ctx, redisBucketKey(key)).Result()
@@ -438,5 +544,5 @@ func mergeRedisActiveBuckets(merged map[bucketKey]counters, params QueryParams, 
 }
 
 func redisBucketKey(key bucketKey) string {
-	return fmt.Sprintf("perf:%s:%s:%d", key.model, key.group, key.bucketTs)
+	return fmt.Sprintf("perf:%s:%s:%d:%d", key.model, key.group, key.channelId, key.bucketTs)
 }

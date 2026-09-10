@@ -41,10 +41,12 @@ func flushCompletedBuckets() {
 		err := model.UpsertPerfMetric(&model.PerfMetric{
 			ModelName:      k.model,
 			Group:          k.group,
+			ChannelId:      k.channelId,
 			BucketTs:       k.bucketTs,
 			RequestCount:   drained.requestCount,
 			SuccessCount:   drained.successCount,
 			TotalLatencyMs: drained.totalLatencyMs,
+			MaxLatencyMs:   drained.maxLatencyMs,
 			TtftSumMs:      drained.ttftSumMs,
 			TtftCount:      drained.ttftCount,
 			OutputTokens:   drained.outputTokens,
@@ -82,10 +84,13 @@ func redisCounters(values map[string]string) counters {
 		requestCount:   parseRedisInt(values["req"]),
 		successCount:   parseRedisInt(values["ok"]),
 		totalLatencyMs: parseRedisInt(values["lat"]),
-		ttftSumMs:      parseRedisInt(values["ttft"]),
-		ttftCount:      parseRedisInt(values["ttft_n"]),
-		outputTokens:   parseRedisInt(values["out"]),
-		generationMs:   parseRedisInt(values["gen_ms"]),
+		// 只有按桶记录最大值的部署才会写入 lat_max；Redis 热路径用 HIncrBy 累加求和，
+		// 无法合并最大值。
+		maxLatencyMs: parseRedisInt(values["lat_max"]),
+		ttftSumMs:    parseRedisInt(values["ttft"]),
+		ttftCount:    parseRedisInt(values["ttft_n"]),
+		outputTokens: parseRedisInt(values["out"]),
+		generationMs: parseRedisInt(values["gen_ms"]),
 	}
 }
 

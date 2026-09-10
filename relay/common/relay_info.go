@@ -234,6 +234,12 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		IsModelMapped:        false,
 		SupportStreamOptions: false,
 	}
+	// 统一模型路由按次重写上游模型:每次选中渠道时选择器都会把成员的
+	// 真实模型名写入上下文,因此重试会自动指向新成员的模型。
+	if unifiedTarget := common.GetContextKeyString(c, constant.ContextKeyUnifiedModelTarget); unifiedTarget != "" {
+		channelMeta.UpstreamModelName = unifiedTarget
+		channelMeta.IsModelMapped = true
+	}
 
 	if channelType == constant.ChannelTypeAzure {
 		channelMeta.ApiVersion = GetAPIVersion(c)
@@ -378,6 +384,10 @@ var streamSupportedChannels = map[int]bool{
 	constant.ChannelTypeSub2API:        true,
 	constant.ChannelTypeNewAPI:         true,
 	constant.ChannelTypeTencent:        true,
+	constant.ChannelTypeAgnes:          true,
+	constant.ChannelTypeAgnesChina:     true,
+	constant.ChannelTypeNVIDIA:         true,
+	constant.ChannelTypeSenseNova:      true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
@@ -582,6 +592,12 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		info.IsPlayground = true
 		info.RequestURLPath = strings.TrimPrefix(info.RequestURLPath, "/pg")
 		info.RequestURLPath = "/v1" + info.RequestURLPath
+	}
+
+	// 统一模型路由按首次选中的成员模型计价;重试切换模型时保持该计费
+	// 身份,使预扣费估算与结算保持一致。
+	if unifiedTarget := common.GetContextKeyString(c, constant.ContextKeyUnifiedModelTarget); unifiedTarget != "" {
+		info.BillingModelName = unifiedTarget
 	}
 
 	userSetting, ok := common.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting)
