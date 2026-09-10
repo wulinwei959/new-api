@@ -56,6 +56,10 @@ type memberStatsCacheEntry struct {
 
 var memberStatsCache sync.Map // key: unifiedId|tokenGroup|userGroup -> memberStatsCacheEntry
 
+// ClearMemberStatsCache evicts all cached member stats so that the next request
+// recomputes scores from live data. Call this after configuration changes.
+func ClearMemberStatsCache() { memberStatsCache.Clear() }
+
 // lastAllExhaustedWarnMinute rate-limits the whole-pool-exhausted fallback
 // warning to one line per aligned minute per unified model, so sustained
 // overload cannot flood the logs (every rejected request takes that path).
