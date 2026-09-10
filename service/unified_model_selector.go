@@ -70,6 +70,20 @@ var routeResultCache sync.Map // key: unifiedId|tokenGroup|userGroup -> routeRes
 // recomputes scores from live data. Call this after configuration changes.
 func ClearMemberStatsCache() { memberStatsCache.Clear() }
 
+// routeResultCache caches the final channel selection so repeated requests for
+// the same model+group avoid re-scoring. Only used when excludeChannelIds is nil
+// (first attempt, not a retry).
+type routeResult struct {
+	channelId int
+	group     string
+	expiresAt time.Time
+}
+var routeResultCache sync.Map // key: unifiedId|tokenGroup|userGroup -> routeResult
+
+// ClearMemberStatsCache evicts all cached member stats so that the next request
+// recomputes scores from live data. Call this after configuration changes.
+func ClearMemberStatsCache() { memberStatsCache.Clear() }
+
 // lastAllExhaustedWarnMinute rate-limits the whole-pool-exhausted fallback
 // warning to one line per aligned minute per unified model, so sustained
 // overload cannot flood the logs (every rejected request takes that path).
@@ -280,11 +294,11 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 	// budget so the pool fails over to a member with headroom. When the whole
 	// pool is exhausted we keep the full set for availability and let the
 	// limiter act as the backstop (429).
-	candidates, excluded, allExhausted := filterExhaustedMembers(candidates)
-	if allExhausted {
-		warnAllExhaustedFallback(c, unifiedId, len(candidates))
-	} else if excluded > 0 {
-		logger.LogDebug(c, "unified model %s: %d member(s) excluded by per-model rate limit, candidates left=%d", unifiedId, excluded, len(candidates))
+	// Suppress members in cooldown due to consecutive server errors.
+	var cooldownExcluded int
+	candidates, cooldownExcluded = suppressCooldDownMembers(candidates)
+	if cooldownExcluded > 0 {
+		logger.LogDebug(c, "unified model %s: %d member(s) in cooldown, candidates left=%d", unifiedId, cooldownExcluded, len(candidates))
 	}
 
 	selected := pickWeightedCandidate(candidates)
@@ -353,6 +367,28 @@ func filterExhaustedMembers(candidates []unifiedCandidate) ([]unifiedCandidate, 
 		return candidates, excluded, true
 	}
 	return kept, excluded, false
+}
+
+// suppressCooldDownMembers drops candidates whose channel is currently in a cooldown
+// due to consecutive server errors. When the entire input is suppressed we keep it
+// so availability is preserved and the rate limiter acts as the backstop.
+func suppressCooldDownMembers(candidates []unifiedCandidate) ([]unifiedCandidate, int) {
+	kept := candidates[:0]
+	excluded := 0
+	for _, candidate := range candidates {
+		if !IsChannelInCooldown(candidate.ChannelId) {
+			kept = append(kept, candidate)
+		} else {
+			excluded++
+		}
+	}
+	if excluded == 0 {
+		return candidates, 0
+	}
+	if len(kept) == 0 {
+		return candidates, excluded
+	}
+	return kept, excluded
 }
 
 func pickWeightedCandidate(candidates []unifiedCandidate) unifiedCandidate {

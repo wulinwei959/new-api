@@ -248,6 +248,50 @@ func recordRedisModelTokens(model string, tokens int64) {
 	rdb.Expire(ctx, key, modelRateLimitKeyTTL)
 }
 
+// consecutiveFailuresKey returns the Redis key for tracking consecutive server errors on a channel.
+func consecutiveFailuresKey(channelId int) string {
+	return fmt.Sprintf("unified_model_failures:%d", channelId)
+}
+
+// RecordConsecutiveFailure increments the counter. When count >= cooldownSeconds the channel
+// is considered to be in cooldown for cooldownSeconds. Non-server errors should call ClearConsecutiveFailure.
+func RecordConsecutiveFailure(channelId int, cooldownSeconds int) {
+	if !common.RedisEnabled || common.RDB == nil {
+		return
+	}
+	ctx := context.Background()
+	key := consecutiveFailuresKey(channelId)
+	count, err := common.RDB.Incr(ctx, key).Result()
+	if err != nil {
+		return
+	}
+	if count == 1 {
+		common.RDB.Expire(ctx, key, time.Duration(cooldownSeconds+60)*time.Second)
+	}
+	if count >= int64(cooldownSeconds) {
+		common.RDB.Expire(ctx, key, time.Duration(cooldownSeconds)*time.Second)
+	}
+}
+
+// ClearConsecutiveFailure resets the counter when the channel recovers.
+func ClearConsecutiveFailure(channelId int) {
+	if !common.RedisEnabled || common.RDB == nil {
+		return
+	}
+	ctx := context.Background()
+	common.RDB.Del(ctx, consecutiveFailuresKey(channelId))
+}
+
+// IsChannelInCooldown checks whether the channel is currently in a cooldown period.
+func IsChannelInCooldown(channelId int) bool {
+	if !common.RedisEnabled || common.RDB == nil {
+		return false
+	}
+	ctx := context.Background()
+	ttl, err := common.RDB.TTL(ctx, consecutiveFailuresKey(channelId)).Result()
+	return err == nil && ttl > 0
+}
+
 func modelRateLimitRedisKey(kind, model string, minute int64) string {
 	return fmt.Sprintf("model_rate_limit:%s:%s:%d", kind, model, minute)
 }
