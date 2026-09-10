@@ -39,18 +39,19 @@ func flushCompletedBuckets() {
 		}
 
 		err := model.UpsertPerfMetric(&model.PerfMetric{
-			ModelName:      k.model,
-			Group:          k.group,
-			ChannelId:      k.channelId,
-			BucketTs:       k.bucketTs,
-			RequestCount:   drained.requestCount,
-			SuccessCount:   drained.successCount,
-			TotalLatencyMs: drained.totalLatencyMs,
-			MaxLatencyMs:   drained.maxLatencyMs,
-			TtftSumMs:      drained.ttftSumMs,
-			TtftCount:      drained.ttftCount,
-			OutputTokens:   drained.outputTokens,
-			GenerationMs:   drained.generationMs,
+		ModelName:      k.model,
+		Group:          k.group,
+		ChannelId:      k.channelId,
+		BucketTs:       k.bucketTs,
+		RequestCount:   drained.requestCount,
+		SuccessCount:   drained.successCount,
+		ServerErrorCount: drained.serverErrorCount,
+		TotalLatencyMs: drained.totalLatencyMs,
+		MaxLatencyMs:   drained.maxLatencyMs,
+		TtftSumMs:      drained.ttftSumMs,
+		TtftCount:      drained.ttftCount,
+		OutputTokens:   drained.outputTokens,
+		GenerationMs:   drained.generationMs,
 		})
 		if err != nil {
 			bucket.addCounters(drained)

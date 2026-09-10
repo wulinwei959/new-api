@@ -186,22 +186,25 @@ func collectMemberStatsUncached(c *gin.Context, unified unified_model_setting.Un
 // scoreMember folds the live stats into a single [0,1] score using the fixed
 // V1 weights. Members without data get the neutral score.
 func scoreMember(stat memberStat) float64 {
-	// 冷启动惩罚：请求量不足时对新成员打折扣，避免首次请求就集中到新加入的渠道。
-	// 100 次请求视为已度过学习期；在此之下按 sqrt(count/100) 线性插值到 neutralScore。
-	const coldStartThreshold = 100
-	if stat.HasData && stat.Stats.RequestCount > 0 && stat.Stats.RequestCount < coldStartThreshold {
-		penalty := math.Sqrt(float64(stat.Stats.RequestCount) / coldStartThreshold)
-		return neutralScore * penalty
-	}
 	if !stat.HasData || stat.Stats.RequestCount == 0 {
 		return neutralScore
 	}
-	successRate := stat.Stats.SuccessRate / 100
+	// 冷启动惩罚：请求量不足时对新成员打折扣，避免首次请求就集中到新加入的渠道。
+	// 100 次请求视为已度过学习期；在此之下按 sqrt(count/100) 插值到 neutralScore。
+	const coldStartThreshold = 100
+	if stat.Stats.RequestCount < coldStartThreshold {
+		penalty := math.Sqrt(float64(stat.Stats.RequestCount) / coldStartThreshold)
+		return neutralScore * penalty
+	}
+	// 错误类型敏感度：server error(5xx) 才是渠道不健康的信号，client error(4xx) 是调用方问题
+	serverErrorRate := 0.0
+	if stat.Stats.RequestCount > 0 {
+		serverErrorRate = float64(stat.Stats.ServerErrorCount) / float64(stat.Stats.RequestCount) * 100
+	}
+	successRate := (stat.Stats.SuccessRate - serverErrorRate) / 100
 	latencyScore := scoreLatencySmoothMs / (scoreLatencySmoothMs + float64(stat.Stats.AvgLatencyMs))
 	throughputScore := neutralScore
 	if stat.Stats.AvgTps > 0 {
-		// Without a pool-wide max, anchor throughput at 20 tps = 1.0 so the
-		// dimension stays comparable across refreshes.
 		throughputScore = math.Min(stat.Stats.AvgTps/20.0, 1)
 	}
 	score := successRateWeight*successRate +

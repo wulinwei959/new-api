@@ -24,7 +24,7 @@ func Init() {
 	go flushLoop()
 }
 
-func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens int64) {
+func RecordRelaySample(info *relaycommon.RelayInfo, success bool, isServerError bool, outputTokens int64) {
 	if info == nil {
 		return
 	}
@@ -50,6 +50,7 @@ func RecordRelaySample(info *relaycommon.RelayInfo, success bool, outputTokens i
 		TtftMs:       ttftMs,
 		HasTtft:      hasTtft,
 		Success:      success,
+		IsServerError: isServerError,
 		OutputTokens: outputTokens,
 		GenerationMs: generationMs,
 	})
@@ -214,15 +215,17 @@ func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
 			continue
 		}
 		stats[k.channelId] = ChannelStats{
-			Group:        k.group,
-			ChannelId:    k.channelId,
-			RequestCount: value.requestCount,
-			SuccessCount: value.successCount,
-			AvgLatencyMs: avg(value.totalLatencyMs, value.requestCount),
-			MaxLatencyMs: value.maxLatencyMs,
-			AvgTtftMs:    avg(value.ttftSumMs, value.ttftCount),
-			AvgTps:       math.Round(avgTps(value)*100) / 100,
-			SuccessRate:  math.Round(successRate(value)*100) / 100,
+		Group:            k.group,
+		ChannelId:        k.channelId,
+		RequestCount:     value.requestCount,
+		SuccessCount:     value.successCount,
+		ServerErrorCount: value.serverErrorCount,
+		AvgLatencyMs:     avg(value.totalLatencyMs, value.requestCount),
+		MaxLatencyMs:     value.maxLatencyMs,
+		AvgTtftMs:        avg(value.ttftSumMs, value.ttftCount),
+		AvgTps:           math.Round(avgTps(value)*100) / 100,
+		SuccessRate:      math.Round(successRate(value)*100) / 100,
+	}
 		}
 	}
 	return stats, nil
