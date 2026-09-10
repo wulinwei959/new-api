@@ -56,6 +56,16 @@ type memberStatsCacheEntry struct {
 
 var memberStatsCache sync.Map // key: unifiedId|tokenGroup|userGroup -> memberStatsCacheEntry
 
+// routeResultCache caches the final channel selection so repeated requests for
+// the same model+group avoid re-scoring. Only used when excludeChannelIds is nil
+// (first attempt, not a retry).
+type routeResult struct {
+	channelId int
+	group     string
+	expiresAt time.Time
+}
+var routeResultCache sync.Map // key: unifiedId|tokenGroup|userGroup -> routeResult
+
 // ClearMemberStatsCache evicts all cached member stats so that the next request
 // recomputes scores from live data. Call this after configuration changes.
 func ClearMemberStatsCache() { memberStatsCache.Clear() }
@@ -220,6 +230,19 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 		return nil, "", fmt.Errorf("unified model %s is not enabled or has no enabled members", unifiedId)
 	}
 	userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+	// 首次选路（无重试）时可复用上次结果，减少头部抖动
+	if excludeChannelIds == nil {
+		if entry, ok := routeResultCache.Load(unifiedId + "|" + tokenGroup + "|" + userGroup); ok {
+			cached := entry.(routeResult)
+			if time.Now().Before(cached.expiresAt) {
+				ch, err := model.CacheGetChannel(cached.channelId)
+				if err == nil && ch != nil && ch.Status == common.ChannelStatusEnabled {
+					common.SetContextKey(c, constant.ContextKeyUnifiedModelId, unifiedId)
+					return ch, cached.group, nil
+				}
+			}
+		}
+	}
 	memberStats := collectMemberStats(c, unified, tokenGroup, userGroup)
 
 	candidates := make([]unifiedCandidate, 0, len(unified.Channels))
@@ -271,6 +294,12 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 	}
 	common.SetContextKey(c, constant.ContextKeyUnifiedModelId, unifiedId)
 	common.SetContextKey(c, constant.ContextKeyUnifiedModelTarget, selected.ModelName)
+	// 缓存选路结果供短时间内复用
+	routeResultCache.Store(unifiedId+"|"+tokenGroup+"|"+userGroup, routeResult{
+		channelId: selected.ChannelId,
+		group:     selected.Group,
+		expiresAt: time.Now().Add(ttl),
+	})
 	return channel, selected.Group, nil
 }
 

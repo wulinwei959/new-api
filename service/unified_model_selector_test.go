@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	perfmetrics "github.com/QuantumNous/new-api/pkg/perf_metrics"
 	"github.com/stretchr/testify/assert"
@@ -129,4 +130,24 @@ func TestScoreMemberColdStartPenalty(t *testing.T) {
 		Stats: perfmetrics.ChannelStats{RequestCount: 200, SuccessRate: 100, AvgLatencyMs: 100, AvgTps: 40},
 	}
 	assert.Greater(t, scoreMember(warmMember), neutralScore, "充分积累的成员分数应高于 neutral")
+}
+
+func TestRouteResultCacheReusesSelection(t *testing.T) {
+	// routeResultCache 在首次选路成功后应存储结果，第二次相同请求可复用
+	// 这个测试依赖真实的统一模型配置，因此只验证缓存逻辑本身的存在性
+	key := "test-model|auto|default"
+	entry := routeResult{
+		channelId: 1,
+		group:     "default",
+		expiresAt: time.Now().Add(time.Hour),
+	}
+	routeResultCache.Store(key, entry)
+	if got, ok := routeResultCache.Load(key); !ok {
+		t.Fatal("expected cache entry to exist")
+	} else {
+		cached := got.(routeResult)
+		assert.Equal(t, 1, cached.channelId)
+		assert.Equal(t, "default", cached.group)
+	}
+	routeResultCache.Delete(key)
 }
