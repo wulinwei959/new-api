@@ -355,6 +355,28 @@ func filterExhaustedMembers(candidates []unifiedCandidate) ([]unifiedCandidate, 
 	return kept, excluded, false
 }
 
+// suppressCooldDownMembers drops candidates whose channel is currently in a cooldown
+// due to repeated server errors. When all candidates are suppressed we keep them all
+// (availability over correctness) so the limiter acts as the final backstop.
+func suppressCooldDownMembers(candidates []unifiedCandidate) ([]unifiedCandidate, int) {
+	kept := candidates[:0]
+	excluded := 0
+	for _, candidate := range candidates {
+		if !service.IsChannelInCooldown(candidate.ChannelId) {
+			kept = append(kept, candidate)
+		} else {
+			excluded++
+		}
+	}
+	if excluded == 0 {
+		return candidates, 0
+	}
+	if len(kept) == 0 {
+		return candidates, excluded
+	}
+	return kept, excluded
+}
+
 func pickWeightedCandidate(candidates []unifiedCandidate) unifiedCandidate {
 	total := 0.0
 	for _, candidate := range candidates {
@@ -468,6 +490,19 @@ func GetUnifiedModelHealth(c *gin.Context, unifiedId string) ([]UnifiedModelHeal
 
 // ParseExcludeChannelIds converts the relay use_channel string slice into the
 // exclusion set used by unified selection on retry attempts.
+func ParseExcludeChannelIds(useChannel []string) map[int]struct{} {
+	if len(useChannel) == 0 {
+		return nil
+	}
+	exclude := make(map[int]struct{}, len(useChannel))
+	for _, raw := range useChannel {
+		if id, err := strconv.Atoi(raw); err == nil {
+			exclude[id] = struct{}{}
+		}
+	}
+	return exclude
+}
+ selection on retry attempts.
 func ParseExcludeChannelIds(useChannel []string) map[int]struct{} {
 	if len(useChannel) == 0 {
 		return nil

@@ -102,13 +102,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 				c.JSON(newAPIError.StatusCode, gin.H{
 					"type":  "error",
 					"error": newAPIError.ToClaudeError(),
-				})
+	\t\t})
 			default:
 				c.JSON(newAPIError.StatusCode, gin.H{
 					"error": newAPIError.ToOpenAIError(),
 				})
 			}
-		}
+		}\n\t// 成功或非 server error 时清除冷却计数\n\tif relayInfo.ChannelId > 0 {\n\t\tservice.ClearConsecutiveFailure(relayInfo.ChannelId)\n\t}
 	}()
 
 	request, err := helper.GetAndValidateRequest(c, relayFormat)
@@ -252,10 +252,18 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 	if newAPIError != nil {
 		gopool.Go(func() {
-			perfmetrics.RecordRelaySample(relayInfo, false, newAPIError != nil && newAPIError.StatusCode >= 500, 0)
+			perfmetrics.RecordRelaySample(relayInfo, false, newAPIError != nil && newAPIError.StatusCode >= 500, 0)\n\t\t\t// server error(5xx) 累加连续失败计数，触发冷却\n\t\t\tif newAPIError != nil && newAPIError.StatusCode >= 500 && relayInfo.ChannelId > 0 {\n\t\t\t\tservice.RecordConsecutiveFailure(relayInfo.ChannelId, 5)\n\t\t\t}
+			// server error(5xx) 累加连续失败计数，触发冷却
+			if newAPIError != nil && newAPIError.StatusCode >= 500 && relayInfo.ChannelId > 0 {
+				service.RecordConsecutiveFailure(relayInfo.ChannelId, 5)
+			}
 		})
 	}
 }
+		// 成功或非 server error 时清除冷却计数
+		if relayInfo.ChannelId > 0 {
+			service.ClearConsecutiveFailure(relayInfo.ChannelId)
+		}
 
 // CountClaudeTokens implements Anthropic's token-counting utility endpoint.
 // It deliberately skips upstream generation and billing; callers use this
