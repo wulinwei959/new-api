@@ -232,6 +232,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if newAPIError == nil {
 			relayInfo.LastError = nil
+			// 成功时清除连续失败计数
+			if (relayInfo.ChannelId > 0) service.ClearConsecutiveFailure(relayInfo.ChannelId)
 			return
 		}
 
