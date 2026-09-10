@@ -6254,5 +6254,6 @@
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
     "Zoom": "缩放"
-  }
+  },
+  "No unified models configured. Create one and point clients at its ID, e.g. \"auto\".": "未配置统一模型。请创建一个，并将客户端指向其 ID，例如\"auto\"。"
 }

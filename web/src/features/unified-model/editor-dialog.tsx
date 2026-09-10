@@ -215,11 +215,11 @@ export function UnifiedModelEditorDialog(props: Props) {
                 }
                 const latencyLabel =
                   memberHealth && memberHealth.avg_latency_ms >= 1000
-                    ? `${(memberHealth.avg_latency_ms / 1000).toFixed(1)}s`
+                    ? `${(memberHealth.avg_latency_ms / 1000).toFixed(1)}ms`
                     : `${memberHealth?.avg_latency_ms ?? 0}ms`
                 const maxLatencyLabel =
                   memberHealth && memberHealth.max_latency_ms >= 1000
-                    ? `${(memberHealth.max_latency_ms / 1000).toFixed(1)}s`
+                    ? `${(memberHealth.max_latency_ms / 1000).toFixed(1)}ms`
                     : `${memberHealth?.max_latency_ms ?? 0}ms`
                 return (
                   <div
