@@ -172,6 +172,13 @@ func collectMemberStatsUncached(c *gin.Context, unified unified_model_setting.Un
 // scoreMember folds the live stats into a single [0,1] score using the fixed
 // V1 weights. Members without data get the neutral score.
 func scoreMember(stat memberStat) float64 {
+	// 冷启动惩罚：请求量不足时对新成员打折扣，避免首次请求就集中到新加入的渠道。
+	// 100 次请求视为已度过学习期；在此之下按 sqrt(count/100) 线性插值到 neutralScore。
+	const coldStartThreshold = 100
+	if stat.HasData && stat.Stats.RequestCount > 0 && stat.Stats.RequestCount < coldStartThreshold {
+		penalty := math.Sqrt(float64(stat.Stats.RequestCount) / coldStartThreshold)
+		return neutralScore * penalty
+	}
 	if !stat.HasData || stat.Stats.RequestCount == 0 {
 		return neutralScore
 	}
