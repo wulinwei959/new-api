@@ -6255,5 +6255,26 @@
     "Zhipu V4": "智譜 V4",
     "Zoom": "縮放"
   },
-  "No unified models configured. Create one and point clients at its ID, e.g. \"auto\".": "未配置統一模型。請建立一個，並將客戶端指向其 ID，例如\"auto\"。"
+  "No unified models configured. Create one and point clients at its ID, e.g. \"auto\".": "未配置統一模型。請建立一個，並將客戶端指向其 ID，例如\"auto\"。",
+  "TLS Settings": "TLS Settings",
+  "Enable TLS": "Enable TLS",
+  "TLS Mode": "TLS Mode",
+  "Auto (Self-signed)": "Auto (Self-signed)",
+  "Manual (Upload)": "Manual (Upload)",
+  "Certificate Path": "Certificate Path",
+  "Minimum TLS Version": "Minimum TLS Version",
+  "HTTP to HTTPS Redirect": "HTTP to HTTPS Redirect",
+  "Redirect Port": "Redirect Port",
+  "TLS settings saved": "TLS settings saved",
+  "Save TLS settings": "Save TLS settings",
+  "Path to certificate file": "Path to certificate file",
+  "Path to private key file": "Path to private key file",
+  "Self-signed certificates are only valid for local network use. Browsers will show an insecure warning.": "Self-signed certificates are only valid for local network use. Browsers will show an insecure warning.",
+  "For public internet access, upload a trusted certificate via environment variables: TLS_CERT_FILE and TLS_KEY_FILE.": "For public internet access, upload a trusted certificate via environment variables: TLS_CERT_FILE and TLS_KEY_FILE.",
+  "Auto-generated certificate will be stored here.": "Auto-generated certificate will be stored here.",
+  "Full path to the TLS certificate file (.crt or .pem)": "Full path to the TLS certificate file (.crt or .pem)",
+  "Full path to the TLS private key file (.key)": "Full path to the TLS private key file (.key)",
+  "Minimum TLS protocol version to accept": "Minimum TLS protocol version to accept",
+  "Redirect HTTP requests to HTTPS": "Redirect HTTP requests to HTTPS",
+  "Port to listen for HTTP redirects (must be different from main port)": "Port to listen for HTTP redirects (must be different from main port)"
 }

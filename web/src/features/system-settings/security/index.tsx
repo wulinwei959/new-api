@@ -42,6 +42,13 @@ const defaultSecuritySettings: SecuritySettings = {
   'fetch_setting.allowed_ports': [],
   'fetch_setting.apply_ip_filter_for_domain': false,
   'token_setting.max_user_tokens': 1000,
+  'tls_enabled': false,
+  'tls_mode': 'auto',
+  'tls_min_version': '1.2',
+  'http_to_https_redirect': false,
+  'http_redirect_port': '8080',
+  'tls_cert_file': '',
+  'tls_key_file': '',
 }
 
 export function SecuritySettings() {

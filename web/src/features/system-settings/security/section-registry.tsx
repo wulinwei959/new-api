@@ -20,6 +20,7 @@ import { RateLimitSection } from '../request-limits/rate-limit-section'
 import { SensitiveWordsSection } from '../request-limits/sensitive-words-section'
 import { SSRFSection } from '../request-limits/ssrf-section'
 import { TokenLimitSection } from '../request-limits/token-limit-section'
+import { TLSSettingsSection } from './tls-settings-section'
 import type { SecuritySettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -86,6 +87,23 @@ const SECURITY_SECTIONS = [
         defaultValues={{
           'token_setting.max_user_tokens':
             settings['token_setting.max_user_tokens'],
+        }}
+      />
+    ),
+  },
+  {
+    id: 'tls',
+    titleKey: 'TLS Settings',
+    build: (settings: SecuritySettings) => (
+      <TLSSettingsSection
+        defaultValues={{
+          'tls_enabled': settings['tls_enabled'] ?? false,
+          'tls_mode': settings['tls_mode'] ?? 'auto',
+          'tls_min_version': settings['tls_min_version'] ?? '1.2',
+          'http_to_https_redirect': settings['http_to_https_redirect'] ?? false,
+          'http_redirect_port': settings['http_redirect_port'] ?? '',
+          'tls_cert_file': settings['tls_cert_file'] ?? '',
+          'tls_key_file': settings['tls_key_file'] ?? '',
         }}
       />
     ),

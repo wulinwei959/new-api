@@ -214,11 +214,37 @@ func main() {
 		Handler: server,
 	}
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			common.FatalLog("failed to start HTTP server: " + err.Error())
+	// TLS 支持
+	if tlsConfig, err := common.GetTLSConfig(); err != nil {
+		common.FatalLog("failed to get TLS config: " + err.Error())
+	} else if tlsConfig != nil {
+		srv.TLSConfig = tlsConfig
+		go func() {
+			if err := srv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				common.FatalLog("failed to start HTTPS server: " + err.Error())
+			}
+		}()
+	} else {
+		go func() {
+			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				common.FatalLog("failed to start HTTP server: " + err.Error())
+			}
+		}()
+	}
+
+	// HTTP→HTTPS 重定向
+	if common.GetEnvOrDefaultBool("HTTP_TO_HTTPS_REDIRECT", false) && common.GetEnvOrDefaultBool("TLS_ENABLED", false) {
+		redirectPort := os.Getenv("HTTP_REDIRECT_PORT")
+		if redirectPort == "" {
+			redirectPort = "8080"
 		}
-	}()
+		portNum, _ := strconv.Atoi(redirectPort)
+		httpsHost := os.Getenv("TLS_HTTPS_HOST")
+		if httpsHost == "" {
+			httpsHost = "localhost"
+		}
+		common.StartHTTPRedirectServer(portNum, httpsHost)
+	}
 
 	time.Sleep(100 * time.Millisecond)
 

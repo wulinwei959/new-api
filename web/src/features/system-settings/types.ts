@@ -389,6 +389,13 @@ export type SecuritySettings = {
   'fetch_setting.allowed_ports': number[]
   'fetch_setting.apply_ip_filter_for_domain': boolean
   'token_setting.max_user_tokens': number
+  'tls_enabled': boolean
+  'tls_mode': 'auto' | 'manual'
+  'tls_min_version': '1.2' | '1.3'
+  'http_to_https_redirect': boolean
+  'http_redirect_port': string
+  'tls_cert_file': string
+  'tls_key_file': string
 }
 
 export type UpstreamChannel = {
