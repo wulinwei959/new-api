@@ -43,16 +43,16 @@ func RecordRelaySample(info *relaycommon.RelayInfo, success bool, isServerError 
 		generationMs = latencyMs
 	}
 	Record(Sample{
-		Model:        info.OriginModelName,
-		Group:        info.UsingGroup,
-		ChannelId:    info.ChannelId,
-		LatencyMs:    latencyMs,
-		TtftMs:       ttftMs,
-		HasTtft:      hasTtft,
-		Success:      success,
+		Model:         info.OriginModelName,
+		Group:         info.UsingGroup,
+		ChannelId:     info.ChannelId,
+		LatencyMs:     latencyMs,
+		TtftMs:        ttftMs,
+		HasTtft:       hasTtft,
+		Success:       success,
 		IsServerError: isServerError,
-		OutputTokens: outputTokens,
-		GenerationMs: generationMs,
+		OutputTokens:  outputTokens,
+		GenerationMs:  generationMs,
 	})
 }
 
@@ -135,15 +135,17 @@ func Query(params QueryParams) (QueryResult, error) {
 
 // ChannelStats 是按（分组、渠道）聚合的性能数据，统一模型选择器用它给模型池成员打分。
 type ChannelStats struct {
-	Group        string  `json:"group"`
-	ChannelId    int     `json:"channel_id"`
-	RequestCount int64   `json:"request_count"`
-	SuccessCount int64   `json:"success_count"`
-	AvgLatencyMs int64   `json:"avg_latency_ms"`
-	MaxLatencyMs int64   `json:"max_latency_ms"`
-	AvgTtftMs    int64   `json:"avg_ttft_ms"`
-	AvgTps       float64 `json:"avg_tps"`
-	SuccessRate  float64 `json:"success_rate"`
+	Group            string  `json:"group"`
+	ChannelId        int     `json:"channel_id"`
+	RequestCount     int64   `json:"request_count"`
+	SuccessCount     int64   `json:"success_count"`
+	ServerErrorCount int64   `json:"server_error_count"`
+	AvgLatencyMs     int64   `json:"avg_latency_ms"`
+	MaxLatencyMs     int64   `json:"max_latency_ms"`
+	AvgTtftMs        int64   `json:"avg_ttft_ms"`
+	TtftCount        int64   `json:"ttft_count"`
+	AvgTps           float64 `json:"avg_tps"`
+	SuccessRate      float64 `json:"success_rate"`
 }
 
 // QueryChannelStats 按渠道聚合指定模型在时间窗口内的性能指标，
@@ -215,17 +217,17 @@ func QueryChannelStats(params QueryParams) (map[int]ChannelStats, error) {
 			continue
 		}
 		stats[k.channelId] = ChannelStats{
-		Group:            k.group,
-		ChannelId:        k.channelId,
-		RequestCount:     value.requestCount,
-		SuccessCount:     value.successCount,
-		ServerErrorCount: value.serverErrorCount,
-		AvgLatencyMs:     avg(value.totalLatencyMs, value.requestCount),
-		MaxLatencyMs:     value.maxLatencyMs,
-		AvgTtftMs:        avg(value.ttftSumMs, value.ttftCount),
-		AvgTps:           math.Round(avgTps(value)*100) / 100,
-		SuccessRate:      math.Round(successRate(value)*100) / 100,
-	}
+			Group:            k.group,
+			ChannelId:        k.channelId,
+			RequestCount:     value.requestCount,
+			SuccessCount:     value.successCount,
+			ServerErrorCount: value.serverErrorCount,
+			AvgLatencyMs:     avg(value.totalLatencyMs, value.requestCount),
+			MaxLatencyMs:     value.maxLatencyMs,
+			AvgTtftMs:        avg(value.ttftSumMs, value.ttftCount),
+			TtftCount:        value.ttftCount,
+			AvgTps:           math.Round(avgTps(value)*100) / 100,
+			SuccessRate:      math.Round(successRate(value)*100) / 100,
 		}
 	}
 	return stats, nil

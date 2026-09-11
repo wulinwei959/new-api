@@ -1,10 +1,14 @@
 package service
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -172,4 +176,86 @@ func TestCheckModelRateLimitByModel(t *testing.T) {
 	assert.Equal(t, int64(42), tpm)
 	_, _, found = setting.GetModelRateLimit("absent")
 	assert.False(t, found)
+}
+
+// withChannelCooldownRedis 用 miniredis 注入 common.RDB，供渠道冷却逻辑测试。
+func withChannelCooldownRedis(t *testing.T) *miniredis.Miniredis {
+	t.Helper()
+	previousEnabled, previousRDB := common.RedisEnabled, common.RDB
+	server := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	common.RedisEnabled = true
+	common.RDB = client
+	t.Cleanup(func() {
+		_ = client.Close()
+		common.RedisEnabled = previousEnabled
+		common.RDB = previousRDB
+	})
+	return server
+}
+
+// TestChannelCooldownThreshold 验证连续失败达到阈值才进入冷却，单次失败不误伤。
+func TestChannelCooldownThreshold(t *testing.T) {
+	withChannelCooldownRedis(t)
+	const channelID = 42
+	require.False(t, IsChannelInCooldown(channelID))
+
+	// 1、2 次失败未达阈值，不应冷却
+	RecordConsecutiveFailure(channelID)
+	RecordConsecutiveFailure(channelID)
+	assert.False(t, IsChannelInCooldown(channelID), "低于阈值不得冷却")
+
+	// 第 3 次达到阈值，进入冷却
+	RecordConsecutiveFailure(channelID)
+	require.True(t, IsChannelInCooldown(channelID), "达到阈值应进入冷却")
+
+	ttl, err := common.RDB.TTL(context.Background(), channelCooldownKey(channelID)).Result()
+	require.NoError(t, err)
+	assert.Greater(t, ttl, time.Duration(0))
+	assert.LessOrEqual(t, ttl, time.Duration(channelCooldownSeconds)*time.Second)
+}
+
+// TestChannelCooldownClearsOnRecovery 验证成功恢复后清除计数与冷却标记。
+func TestChannelCooldownClearsOnRecovery(t *testing.T) {
+	withChannelCooldownRedis(t)
+	const channelID = 7
+	for range channelCooldownThreshold {
+		RecordConsecutiveFailure(channelID)
+	}
+	require.True(t, IsChannelInCooldown(channelID))
+
+	ClearConsecutiveFailure(channelID)
+	assert.False(t, IsChannelInCooldown(channelID), "清除后应退出冷却")
+
+	// 计数也一并清零，需重新累计到阈值才再次冷却
+	RecordConsecutiveFailure(channelID)
+	assert.False(t, IsChannelInCooldown(channelID), "清除后计数应从 1 重新开始")
+}
+
+// TestChannelCooldownRenewsOnContinuedFailure 验证持续失败会续期冷却。
+func TestChannelCooldownRenewsOnContinuedFailure(t *testing.T) {
+	withChannelCooldownRedis(t)
+	const channelID = 99
+	for range channelCooldownThreshold {
+		RecordConsecutiveFailure(channelID)
+	}
+	require.True(t, IsChannelInCooldown(channelID))
+
+	// 冷却期内的又一次失败应刷新冷却（仍为冷却态）
+	RecordConsecutiveFailure(channelID)
+	assert.True(t, IsChannelInCooldown(channelID), "持续失败应保持/续期冷却")
+}
+
+// TestChannelCooldownCounterExpiresWithoutThreshold 验证观察窗口到期后计数清零。
+func TestChannelCooldownCounterExpiresWithoutThreshold(t *testing.T) {
+	server := withChannelCooldownRedis(t)
+	const channelID = 5
+	RecordConsecutiveFailure(channelID)
+	RecordConsecutiveFailure(channelID)
+	assert.False(t, IsChannelInCooldown(channelID))
+
+	// 快进超过观察窗口，计数 key 过期；重新计数从 1 开始
+	server.FastForward(channelCooldownObserveWindow + time.Second)
+	RecordConsecutiveFailure(channelID)
+	assert.False(t, IsChannelInCooldown(channelID), "观察窗口到期后计数应重新累计")
 }

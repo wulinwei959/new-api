@@ -148,6 +148,10 @@ func main() {
 		return a
 	}
 
+	// 注入统一模型配置变更时的缓存清除回调，打破 model -> service 包级导入循环。
+	// 必须在 model.SyncOptions 热更新启动前完成，确保配置变更时回调已就位。
+	model.ClearUnifiedModelCache = service.ClearMemberStatsCache
+
 	// Register the periodic channel test, upstream model update, and async task
 	// polling (Midjourney / Suno / video) jobs as scheduled system tasks
 	// (DB-lease dedup across masters + run history), then start the runner that

@@ -25,8 +25,6 @@ type PerfMetric struct {
 	OutputTokens   int64  `json:"-" gorm:"default:0"`
 	GenerationMs   int64  `json:"-" gorm:"default:0"`
 }
-	GenerationMs   int64  `json:"-" gorm:"default:0"`
-}
 
 func (PerfMetric) TableName() string {
 	return "perf_metrics"

@@ -64,20 +64,7 @@ type routeResult struct {
 	group     string
 	expiresAt time.Time
 }
-var routeResultCache sync.Map // key: unifiedId|tokenGroup|userGroup -> routeResult
 
-// ClearMemberStatsCache evicts all cached member stats so that the next request
-// recomputes scores from live data. Call this after configuration changes.
-func ClearMemberStatsCache() { memberStatsCache.Clear() }
-
-// routeResultCache caches the final channel selection so repeated requests for
-// the same model+group avoid re-scoring. Only used when excludeChannelIds is nil
-// (first attempt, not a retry).
-type routeResult struct {
-	channelId int
-	group     string
-	expiresAt time.Time
-}
 var routeResultCache sync.Map // key: unifiedId|tokenGroup|userGroup -> routeResult
 
 // ClearMemberStatsCache evicts all cached member stats so that the next request
@@ -187,8 +174,13 @@ func collectMemberStatsUncached(c *gin.Context, unified unified_model_setting.Un
 				SuccessCount: totalSuccess,
 				AvgLatencyMs: totalLatency / totalCount,
 				AvgTtftMs:    totalTtft / max(totalTtftN, 1),
-				AvgTps:       func() float64 { if totalGenMs <= 0 { return 0 }; return float64(totalCount) / (float64(totalGenMs) / 1000.0) }(),
-				SuccessRate:  float64(totalSuccess) / float64(totalCount) * 100,
+				AvgTps: func() float64 {
+					if totalGenMs <= 0 {
+						return 0
+					}
+					return float64(totalCount) / (float64(totalGenMs) / 1000.0)
+				}(),
+				SuccessRate: float64(totalSuccess) / float64(totalCount) * 100,
 			}
 			entry.HasData = true
 		}
@@ -312,10 +304,11 @@ func SelectUnifiedModelChannel(c *gin.Context, unifiedId string, tokenGroup stri
 	common.SetContextKey(c, constant.ContextKeyUnifiedModelId, unifiedId)
 	common.SetContextKey(c, constant.ContextKeyUnifiedModelTarget, selected.ModelName)
 	// 缓存选路结果供短时间内复用
+	routeTTL := time.Duration(unified_model_setting.GetScoreCacheSeconds()) * time.Second
 	routeResultCache.Store(unifiedId+"|"+tokenGroup+"|"+userGroup, routeResult{
 		channelId: selected.ChannelId,
 		group:     selected.Group,
-		expiresAt: time.Now().Add(ttl),
+		expiresAt: time.Now().Add(routeTTL),
 	})
 	return channel, selected.Group, nil
 }
@@ -370,22 +363,13 @@ func filterExhaustedMembers(candidates []unifiedCandidate) ([]unifiedCandidate, 
 }
 
 // suppressCooldDownMembers drops candidates whose channel is currently in a cooldown
-<<<<<<< HEAD
 // due to consecutive server errors. When the entire input is suppressed we keep it
 // so availability is preserved and the rate limiter acts as the backstop.
-=======
-// due to repeated server errors. When all candidates are suppressed we keep them all
-// (availability over correctness) so the limiter acts as the final backstop.
->>>>>>> 1ee6baad4cdd24e780940bc22da09ee382a3c1d1
 func suppressCooldDownMembers(candidates []unifiedCandidate) ([]unifiedCandidate, int) {
 	kept := candidates[:0]
 	excluded := 0
 	for _, candidate := range candidates {
-<<<<<<< HEAD
 		if !IsChannelInCooldown(candidate.ChannelId) {
-=======
-		if !service.IsChannelInCooldown(candidate.ChannelId) {
->>>>>>> 1ee6baad4cdd24e780940bc22da09ee382a3c1d1
 			kept = append(kept, candidate)
 		} else {
 			excluded++
@@ -513,19 +497,6 @@ func GetUnifiedModelHealth(c *gin.Context, unifiedId string) ([]UnifiedModelHeal
 
 // ParseExcludeChannelIds converts the relay use_channel string slice into the
 // exclusion set used by unified selection on retry attempts.
-func ParseExcludeChannelIds(useChannel []string) map[int]struct{} {
-	if len(useChannel) == 0 {
-		return nil
-	}
-	exclude := make(map[int]struct{}, len(useChannel))
-	for _, raw := range useChannel {
-		if id, err := strconv.Atoi(raw); err == nil {
-			exclude[id] = struct{}{}
-		}
-	}
-	return exclude
-}
- selection on retry attempts.
 func ParseExcludeChannelIds(useChannel []string) map[int]struct{} {
 	if len(useChannel) == 0 {
 		return nil

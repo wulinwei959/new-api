@@ -10,7 +10,6 @@ import (
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/pkg/jsplugin"
 	"github.com/QuantumNous/new-api/setting"
-	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/config"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/performance_setting"
@@ -19,6 +18,11 @@ import (
 	"github.com/QuantumNous/new-api/setting/unified_model_setting"
 	"gorm.io/gorm"
 )
+
+// ClearUnifiedModelCache 在统一模型配置变更时被调用，清除 service 层缓存的成员
+// 性能统计。为避免 model -> service 包级导入循环（service 已依赖 model），该回调
+// 由启动流程注入，默认 nil。
+var ClearUnifiedModelCache func()
 
 type Option struct {
 	Key   string `json:"key" gorm:"primaryKey"`
@@ -664,7 +668,9 @@ func handleConfigUpdate(key, value string) bool {
 		ratio_setting.InvalidateExposedDataCache()
 	} else if configName == "unified_model_setting" {
 		unified_model_setting.BumpVersion()
-		service.ClearMemberStatsCache()
+		if ClearUnifiedModelCache != nil {
+			ClearUnifiedModelCache()
+		}
 	}
 
 	return true // 已处理

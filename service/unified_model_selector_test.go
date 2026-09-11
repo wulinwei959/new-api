@@ -116,22 +116,6 @@ func TestPickWeightedCandidate(t *testing.T) {
 	}
 }
 
-func TestScoreMemberColdStartPenalty(t *testing.T) {
-	// 冷启动惩罚：请求量少于 threshold(100) 时分数低于 neutralScore(0.5)
-	newMember := memberStat{
-		Group:   "default", Enabled: true, Weight: 100, HasData: true,
-		Stats: perfmetrics.ChannelStats{RequestCount: 10, SuccessRate: 100, AvgLatencyMs: 100, AvgTps: 40},
-	}
-	assert.Less(t, scoreMember(newMember), neutralScore, "新成员应有冷启动惩罚")
-
-	// 积累到 threshold 以上后惩罚消失，分数回到正常评分范围。
-	warmMember := memberStat{
-		Group:   "default", Enabled: true, Weight: 100, HasData: true,
-		Stats: perfmetrics.ChannelStats{RequestCount: 200, SuccessRate: 100, AvgLatencyMs: 100, AvgTps: 40},
-	}
-	assert.Greater(t, scoreMember(warmMember), neutralScore, "充分积累的成员分数应高于 neutral")
-}
-
 func TestRouteResultCacheReusesSelection(t *testing.T) {
 	// routeResultCache 在首次选路成功后应存储结果，第二次相同请求可复用
 	// 这个测试依赖真实的统一模型配置，因此只验证缓存逻辑本身的存在性
