@@ -183,7 +183,7 @@ export function TLSSettingsSection({
                 <SettingsSwitchContent>
                   <FormLabel>{t('Enable TLS')}</FormLabel>
                   <FormDescription>
-                    {t('启用 TLS/HTTPS 支持')}
+                    {t('Enables TLS/HTTPS support')}
                   </FormDescription>
                 </SettingsSwitchContent>
                 <FormControl>

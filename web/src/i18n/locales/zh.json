@@ -6276,5 +6276,8 @@
   "Full path to the TLS private key file (.key)": "TLS 私钥文件的完整路径（.key）",
   "Minimum TLS protocol version to accept": "接受的最低 TLS 协议版本",
   "Redirect HTTP requests to HTTPS": "将 HTTP 请求重定向到 HTTPS",
-  "Port to listen for HTTP redirects (must be different from main port)": "监听 HTTP 重定向的端口（必须与主端口不同）"
+  "Port to listen for HTTP redirects (must be different from main port)": "监听 HTTP 重定向的端口（必须与主端口不同）",
+  "Certificate File Path": "证书文件路径",
+  "Key File Path": "私钥文件路径",
+  "Enables TLS/HTTPS support": "启用 TLS/HTTPS 支持"
 }
