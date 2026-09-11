@@ -478,7 +478,13 @@ func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preCon
 		userSetting := relayInfo.UserSetting
 		threshold := common.QuotaRemindThreshold
 		if userSetting.QuotaWarningThreshold != 0 {
+			// 用户阈值为 float64，转 int 后钳制到单请求饱和边界，避免 32 位截断或越界。
 			threshold = int(userSetting.QuotaWarningThreshold)
+			if threshold < 0 {
+				threshold = 0
+			} else if threshold > common.MaxQuota {
+				threshold = common.MaxQuota
+			}
 		}
 
 		//noMoreQuota := userCache.Quota-(quota+preConsumedQuota) <= 0
@@ -533,7 +539,13 @@ func checkAndSendSubscriptionQuotaNotify(relayInfo *relaycommon.RelayInfo) {
 		userSetting := relayInfo.UserSetting
 		threshold := common.QuotaRemindThreshold
 		if userSetting.QuotaWarningThreshold != 0 {
+			// 用户阈值为 float64，转 int 后钳制到单请求饱和边界，避免 32 位截断或越界。
 			threshold = int(userSetting.QuotaWarningThreshold)
+			if threshold < 0 {
+				threshold = 0
+			} else if threshold > common.MaxQuota {
+				threshold = common.MaxQuota
+			}
 		}
 
 		usedAfter := relayInfo.SubscriptionAmountUsedAfterPreConsume + relayInfo.SubscriptionPostDelta

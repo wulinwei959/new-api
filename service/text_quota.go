@@ -133,6 +133,8 @@ func mergeToolSurchargeItems(items []ToolSurchargeItem) []ToolSurchargeItem {
 		if lastIndex >= 0 &&
 			merged[lastIndex].Name == item.Name &&
 			merged[lastIndex].Price == item.Price {
+			// Count 为 int（int64 平台），溢出上限即 int 理论最大；
+			// 与计费 int32 饱和（common.MaxQuota）不同，此处仅防止 int 加法回绕。
 			if item.Count > math.MaxInt-merged[lastIndex].Count {
 				common.SysError("tool surcharge call count overflow for " + item.Name)
 				merged[lastIndex].Count = math.MaxInt

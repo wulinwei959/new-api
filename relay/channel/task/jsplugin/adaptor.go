@@ -1433,7 +1433,12 @@ func (a *TaskAdaptor) validatedCompletionUsageFacts(facts any) (map[string]any, 
 			if !numeric || math.IsNaN(number) || math.IsInf(number, 0) || number < 0 {
 				return nil, fmt.Errorf("plugin usage value must be a finite non-negative number")
 			}
-			validated[key] = float64(common.QuotaFromFloat(number))
+			// 保留精确用量事实，禁止饱和到 int32 上限（会丢失真实量级并可能超额计费）。
+			// 越界值走 fail-closed：报错拒绝，由调用方走退款/失败路径。
+			if number > float64(common.MaxQuota) {
+				return nil, fmt.Errorf("plugin usage value %q exceeds host quota limit", key)
+			}
+			validated[key] = number
 		}
 	}
 	return validated, nil
